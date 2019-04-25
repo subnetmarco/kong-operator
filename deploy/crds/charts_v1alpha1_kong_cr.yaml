@@ -169,6 +169,7 @@ spec:
     enabled: true
     postgresqlUsername: kong
     postgresqlDatabase: kong
+    postgresqlPassword: imnotwhatyouarelookingfor
     service:
       port: 5432
   
