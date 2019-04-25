@@ -4,6 +4,31 @@ metadata:
   creationTimestamp: null
   name: kong-operator
 rules:
+  # to create Ingress rules for Kong
+- apiGroups:
+  - "extensions"
+  resources:
+  - ingresses
+  verbs:
+  - '*'
+  # To create service account for Kong when using Kong as an Ingress Controller
+  # and its associated roles and bindings
+- apiGroups:
+  - "rbac.authorization.k8s.io"
+  resources:
+  - clusterroles
+  - roles
+  - clusterrolebindings
+  - rolebindings
+  verbs:
+  - '*'
+  # To create CRDs for Ingress Controller deployment
+- apiGroups:
+  - "apiextensions.k8s.io"
+  resources:
+  - customresourcedefinitions
+  verbs:
+  - '*'
 - apiGroups:
   - "batch"
   resources:
@@ -20,6 +45,7 @@ rules:
   - events
   - configmaps
   - secrets
+  - serviceaccounts
   verbs:
   - '*'
 - apiGroups:
