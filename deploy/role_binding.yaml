@@ -6,7 +6,7 @@ subjects:
 - kind: ServiceAccount
   name: kong-operator
   # Replace this with the namespace the operator is deployed in.
-  namespace: REPLACE_NAMESPACE
+  namespace: kong
 roleRef:
   kind: ClusterRole
   name: kong-operator

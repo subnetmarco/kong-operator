@@ -5,6 +5,12 @@ metadata:
   name: kong-operator
 rules:
 - apiGroups:
+  - "batch"
+  resources:
+  - jobs
+  verbs:
+  - '*'
+- apiGroups:
   - ""
   resources:
   - pods

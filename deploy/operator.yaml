@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: kong-operator
+  namespace: kong
 spec:
   replicas: 1
   selector:
@@ -16,7 +17,7 @@ spec:
       containers:
         - name: kong-operator
           # Replace this with the built image name
-          image: REPLACE_IMAGE
+          image: kong-docker-kong-operator.bintray.io/kong-operator:v0.0.0
           imagePullPolicy: Always
           env:
             - name: WATCH_NAMESPACE
