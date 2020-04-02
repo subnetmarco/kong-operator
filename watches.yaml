@@ -2,4 +2,4 @@
 - version: v1alpha1
   group: charts.helm.k8s.io
   kind: Kong
-  chart: /opt/helm/helm-charts/kong
+  chart: helm-charts/kong

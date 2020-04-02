@@ -5,7 +5,6 @@ metadata:
 subjects:
 - kind: ServiceAccount
   name: kong-operator
-  # Replace this with the namespace the operator is deployed in.
   namespace: kong
 roleRef:
   kind: ClusterRole
