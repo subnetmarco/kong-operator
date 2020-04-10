@@ -17,7 +17,7 @@ spec:
       containers:
         - name: kong-operator
           # Replace this with the built image name
-          image: kong-docker-kong-operator.bintray.io/kong-operator:v0.2.0
+          image: kong-docker-kong-operator.bintray.io/kong-operator:v0.2.1
           imagePullPolicy: Always
           env:
             - name: WATCH_NAMESPACE
