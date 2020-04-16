@@ -2,7 +2,7 @@ apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
   annotations:
-    alm-examples: '[{"image":{"repository":"kong","tag":"2.0.0","pullPolicy":"Always"},"proxy":{"type":"NodePort"},"env":{"prefix":"/kong_prefix/"},"resources":{"limits":{"cpu":"500m","memory":"2G"},"requests":{"cpu":"100m","memory":"512Mi"}},"ingressController":{"enabled":true,"installCRDs":false}}]'
+    alm-examples: '[{"apiVersion":"charts.helm.k8s.io/v1alpha1","kind":"Kong","metadata":{"name":"example-kong"},"spec":{"image":{"repository":"kong","tag":"2.0.0","pullPolicy":"Always"},"proxy":{"type":"NodePort"},"env":{"prefix":"/kong_prefix/"},"resources":{"limits":{"cpu":"500m","memory":"2G"},"requests":{"cpu":"100m","memory":"512Mi"}},"ingressController":{"enabled":true,"installCRDs":false}}}]'
     capabilities: Basic Install
     categories: Networking
     certified: 'false'
@@ -158,4 +158,3 @@ spec:
   provider:
     name: Kong Inc
   version: 0.2.0
-  replaces: 0.1.0
