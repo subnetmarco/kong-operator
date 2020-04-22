@@ -6,12 +6,12 @@ metadata:
     capabilities: Basic Install
     categories: Networking
     certified: 'false'
-    containerImage: kong-docker-kong-operator.bintray.io/kong-operator:v0.2.4
+    containerImage: kong-docker-kong-operator.bintray.io/kong-operator:v0.2.5
     createdAt: '2020-04-10T17:26:45Z'
     description: Install and manage Kong clusters.
     repository: https://github.com/kong/kong-operator
     support: Harry Bagdi
-  name: kong.v0.2.4
+  name: kong.v0.2.5
   namespace: placeholder
 spec:
   customresourcedefinitions:
@@ -123,7 +123,7 @@ spec:
                       fieldPath: metadata.name
                 - name: OPERATOR_NAME
                   value: kong-operator
-                image: kong-docker-kong-operator.bintray.io/kong-operator:v0.2.4
+                image: kong-docker-kong-operator.bintray.io/kong-operator:v0.2.5
                 imagePullPolicy: Always
                 name: kong-operator
               serviceAccountName: kong-operator
@@ -159,4 +159,5 @@ spec:
   maturity: alpha
   provider:
     name: Kong Inc
-  version: 0.2.4
+  version: 0.2.5
+  replaces: kong.v0.1.0
