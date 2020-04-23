@@ -22,6 +22,9 @@ spec:
       name: kongs.charts.helm.k8s.io
       version: v1alpha1
   description: >
+    Kong is the world's most popular open source API gateway. Built for multi-cloud and hybrid, optimized for microservices and distributed architectures.
+    It provides an enterprise-grade ingress solution to enable native management, security and monitoring of traffic entering Kubernetes clusters.
+
     The Kong Operator manages [Kong](https://konghq.com/kong/) and [Kong Enterprise](https://konghq.com/products/kong-enterprise/) clusters.
     It includes an [ingress controller](https://github.com/Kong/kubernetes-ingress-controller) to configure Kong's gateway using Kubernetes resources.
 
