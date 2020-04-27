@@ -2,7 +2,7 @@ apiVersion: operators.coreos.com/v3alpha1
 kind: ClusterServiceVersion
 metadata:
   annotations:
-    alm-examples: '[{"apiVersion":"charts.helm.k8s.io/v1alpha1","kind":"Kong","metadata":{"name":"example-kong"},"spec":{"image":{"repository":"kong","tag":"2.0.0","pullPolicy":"Always"},"proxy":{"type":"NodePort"},"env":{"prefix":"/kong_prefix/"},"resources":{"limits":{"cpu":"500m","memory":"2G"},"requests":{"cpu":"100m","memory":"512Mi"}},"ingressController":{"enabled":true,"installCRDs":false}}}]'
+    alm-examples: '[{"apiVersion":"charts.helm.k8s.io/v1alpha1","kind":"Kong","metadata":{"name":"example-kong"},"spec":{"proxy":{"type":"NodePort"},"env":{"prefix":"/kong_prefix/"},"resources":{"limits":{"cpu":"500m","memory":"2G"},"requests":{"cpu":"100m","memory":"512Mi"}},"ingressController":{"enabled":true,"installCRDs":false}}}]'
     capabilities: Basic Install
     categories: Networking
     certified: 'false'
@@ -22,14 +22,13 @@ spec:
       name: kongs.charts.helm.k8s.io
       version: v1alpha1
   description: >
-    Kong is the world's most popular open source API gateway. Built for multi-cloud and hybrid, optimized for microservices and distributed architectures.
-    It provides an enterprise-grade ingress solution to enable native management, security and monitoring of traffic entering Kubernetes clusters.
+    Kong is a popular open-source cloud-native API gateway.
 
     The Kong Operator manages [Kong](https://konghq.com/kong/) and [Kong Enterprise](https://konghq.com/products/kong-enterprise/) clusters.
     It includes an [ingress controller](https://github.com/Kong/kubernetes-ingress-controller) to configure Kong's gateway using Kubernetes resources.
 
-    The operator manages Kong using the [Kong Helm chart](https://github.com/Kong/charts/blob/kong-1.5.0/charts/kong/README.md).
-    Its `Kong` custom resource contains a [values.yaml](https://github.com/Kong/charts/blob/kong-1.5.0/charts/kong/values.yaml).
+    The operator manages Kong using the [Kong Helm chart](https://github.com/Kong/charts/blob/master/charts/kong/README.md).
+    Its `Kong` custom resource contains a [values.yaml](https://github.com/Kong/charts/blob/master/charts/kong/values.yaml).
 
   displayName: Kong Operator
   icon:
