@@ -46,6 +46,7 @@ spec:
           - restricted
           verbs:
           - use
+        serviceAccountName: kong-operator
         - apiGroups:
           - extensions
           resources:

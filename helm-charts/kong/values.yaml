@@ -32,8 +32,8 @@ env:
 
 # Specify Kong's Docker image and repository details here
 image:
-  repository: kong
-  tag: "2.0"
+  repository: registry.connect.redhat.com/kong/kong
+  tag: "2.0.4"
   # kong-enterprise-k8s image (Kong OSS + Enterprise plugins)
   # repository: kong-docker-kong-enterprise-k8s.bintray.io/kong-enterprise-k8s
   # tag: "2.0.2.0-alpine"
@@ -341,6 +341,10 @@ ingressController:
 
 postgresql:
   enabled: false
+  image:
+  registry: registry.access.redhat.com
+  repository: rhel8/postgresql-96
+  tag: latest
   # postgresqlUsername: kong
   # postgresqlDatabase: kong
   # service:
