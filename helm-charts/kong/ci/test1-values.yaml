@@ -12,11 +12,16 @@ ingressController:
     enabled: true
 # - environment variables can be injected into ingress controller container
   env:
+    anonymous_reports: "false"
     kong_admin_header: "foo:bar"
 # - annotations can be injected for service account
   serviceAccount:
     annotations:
       eks.amazonaws.com/role-arn: arn:aws:iam::AWS_ACCOUNT_ID:role/IAM_ROLE_NAME
+# - pod labels can be added to the deployment template
+podLabels:
+  app: kong
+  environment: test
 # - podSecurityPolicies are enabled
 podSecurityPolicy:
   enabled: true
@@ -35,3 +40,5 @@ proxy:
     hosts: ["test.com", "test2.com"]
     annotations: {}
     path: /
+env:
+  anonymous_reports: "off"
