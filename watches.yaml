@@ -3,3 +3,7 @@
   group: charts.helm.k8s.io
   kind: Kong
   chart: helm-charts/kong
+
+overrideValues:
+  image.single: $RELATED_IMAGE_KONG
+  image.ingressController.single: $RELATED_IMAGE_KONG_CONTROLLER
