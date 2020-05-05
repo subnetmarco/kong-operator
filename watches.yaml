@@ -5,5 +5,6 @@
   chart: helm-charts/kong
 
 overrideValues:
-  image.single: $RELATED_IMAGE_KONG
-  image.ingressController.single: $RELATED_IMAGE_KONG_CONTROLLER
+  image.unifiedRepoTag: $RELATED_IMAGE_KONG
+  ingressController.image.unifiedRepoTag: $RELATED_IMAGE_KONG_CONTROLLER
+  waitImage.unifiedRepoTag: $RELATED_IMAGE_UTILITY
