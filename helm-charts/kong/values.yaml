@@ -338,6 +338,11 @@ ingressController:
 
 # PostgreSQL chart documentation:
 # https://github.com/helm/charts/blob/master/stable/postgresql/README.md
+#
+# The PostgreSQL chart is not compatible with Red Hat's official Postgres
+# images. If you use the operator in an offline environment, this must be
+# disabled, and you must configure your environment variables to use an
+# independently-installed database or to use DB-less mode.
 
 postgresql:
   enabled: false
