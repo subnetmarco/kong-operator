@@ -289,7 +289,7 @@ Kong can be configured via two methods:
 #### Kong Service Parameters
 
 The various `SVC.*` parameters below are common to the various Kong services
-(the admin API, proxy, Kong Manger, the Developer Portal, and the Developer
+(the admin API, proxy, Kong Manager, the Developer Portal, and the Developer
 Portal API) and define their listener configuration, K8S Service properties,
 and K8S Ingress properties. Defaults are listed only if consistent across the
 individual services: see values.yaml for their individual default values.
@@ -366,6 +366,7 @@ section of `values.yaml` file:
 | serviceAccount.name                | Use existing Service Account, specify its name                                        | ""
 | serviceAccount.annotations         | Annotations for Service Account                                                       | {}
 | installCRDs                        | Create CRDs. Regardless of value of this, Helm v3+ will install the CRDs if those are not present already. Use `--skip-crds` with `helm install` if you want to skip CRD creation. | true |
+
 | env                                | Specify Kong Ingress Controller configuration via environment variables               |                                                                              |
 | ingressClass                       | The ingress-class value for controller                                                | kong                                                                         |
 | args                               | List of ingress-controller cli arguments                                              | []                                                                           |
@@ -445,7 +446,7 @@ you need to do the following:
 
 - Set `enterprise.enabled` to `true` in `values.yaml` file.
 - Update values.yaml to use a Kong Enterprise image.
-- Satisfy the two prerequsisites below for Enterprise License and
+- Satisfy the two prerequisites below for Enterprise License and
   Enterprise Docker Registry.
 - (Optional) [set a `password` environment variable](#rbac) to create the
   initial super-admin. Though not required, this is recommended for users that
