@@ -1,3 +1,4 @@
+{{- if .Values.deployment.kong.enabled }}
 {{- if (and (or (.Values.runMigrations) (.Values.migrations.preUpgrade)) (not (eq .Values.env.database "off"))) }}
 # Why is this Job duplicated and not using only helm hooks?
 # See: https://github.com/helm/charts/pull/7362
@@ -38,7 +39,11 @@ spec:
       {{- end }}
       containers:
       - name: {{ template "kong.name" . }}-upgrade-migrations
+        {{- if .Values.image.unifiedRepoTag }}
+        image: "{{ .Values.image.unifiedRepoTag }}"
+        {{- else }}
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        {{- end }}
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         env:
         {{- include "kong.no_daemon_env" . | nindent 8 }}
@@ -50,4 +55,5 @@ spec:
       restartPolicy: OnFailure
       volumes:
       {{- include "kong.volumes" . | nindent 6 -}}
+{{- end }}
 {{- end }}

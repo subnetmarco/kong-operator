@@ -60,7 +60,10 @@ Generic tool for creating KONG_PROXY_LISTEN, KONG_ADMIN_LISTEN, etc.
   {{- $unifiedListen := list -}}
 
   {{- if .http.enabled -}}
-    {{- $httpListen := (include "kong.singleListen" .http) -}}
+    {{- $listenConfig := dict -}}
+    {{- $listenConfig := merge $listenConfig .http -}}
+    {{- $_ := set $listenConfig "address" (default "0.0.0.0" .address) -}}
+    {{- $httpListen := (include "kong.singleListen" $listenConfig) -}}
     {{- $unifiedListen = append $unifiedListen $httpListen -}}
   {{- end -}}
 
@@ -72,11 +75,12 @@ Generic tool for creating KONG_PROXY_LISTEN, KONG_ADMIN_LISTEN, etc.
     https://github.com/helm/helm/issues/4987 indicates it should be. Instead,
     this creates a new object and new parameters list built from the original.
     */}}
-    {{- $tls := dict -}}
+    {{- $listenConfig := dict -}}
+    {{- $listenConfig := merge $listenConfig .tls -}}
     {{- $parameters := append .tls.parameters "ssl" -}}
-    {{- $_ := set $tls "containerPort" .tls.containerPort -}}
-    {{- $_ := set $tls "parameters" $parameters -}}
-    {{- $tlsListen := (include "kong.singleListen" $tls) -}}
+    {{- $_ := set $listenConfig "parameters" $parameters -}}
+    {{- $_ := set $listenConfig "address" (default "0.0.0.0" .address) -}}
+    {{- $tlsListen := (include "kong.singleListen" $listenConfig) -}}
     {{- $unifiedListen = append $unifiedListen $tlsListen -}}
   {{- end -}}
 
@@ -93,7 +97,10 @@ Create KONG_STREAM_LISTEN string
 {{- define "kong.streamListen" -}}
   {{- $unifiedListen := list -}}
   {{- range .stream -}}
-    {{- $unifiedListen = append $unifiedListen (include "kong.singleListen" . ) -}}
+    {{- $listenConfig := dict -}}
+    {{- $listenConfig := merge $listenConfig . -}}
+    {{- $_ := set $listenConfig "address" "0.0.0.0" -}}
+    {{- $unifiedListen = append $unifiedListen (include "kong.singleListen" $listenConfig ) -}}
   {{- end -}}
 
   {{- $listenString := ($unifiedListen | join ", ") -}}
@@ -108,7 +115,7 @@ Create a single listen (IP+port+parameter combo)
 */}}
 {{- define "kong.singleListen" -}}
   {{- $listen := list -}}
-  {{- $listen = append $listen (printf "0.0.0.0:%d" (int64 .containerPort)) -}}
+  {{- $listen = append $listen (printf "%s:%d" .address (int64 .containerPort)) -}}
   {{- range $param := .parameters | default (list) | uniq }}
     {{- $listen = append $listen $param -}}
   {{- end -}}
@@ -231,9 +238,11 @@ The name of the service used for the ingress controller's validation webhook
     secretName: {{ .name }}
 {{- end }}
 {{- end }}
+{{- if .Values.deployment.kong.enabled }}
 - name: custom-nginx-template-volume
   configMap:
     name: {{ template "kong.fullname" . }}-default-custom-server-blocks
+{{- end }}
 {{- if (and (not .Values.ingressController.enabled) (eq .Values.env.database "off")) }}
 - name: kong-custom-dbless-config-volume
   configMap:
@@ -307,7 +316,11 @@ The name of the service used for the ingress controller's validation webhook
 
 {{- define "kong.wait-for-db" -}}
 - name: wait-for-db
+{{- if .Values.image.unifiedRepoTag }}
+  image: "{{ .Values.image.unifiedRepoTag }}"
+{{- else }}
   image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+{{- end }}
   imagePullPolicy: {{ .Values.image.pullPolicy }}
   env:
   {{- include "kong.env" . | nindent 2 }}
@@ -337,7 +350,11 @@ The name of the service used for the ingress controller's validation webhook
         apiVersion: v1
         fieldPath: metadata.namespace
 {{- include "kong.ingressController.env" .  | indent 2 }}
+{{- if .Values.ingressController.image.unifiedRepoTag }}
+  image: "{{ .Values.ingressController.image.unifiedRepoTag }}"
+{{- else }}
   image: "{{ .Values.ingressController.image.repository }}:{{ .Values.ingressController.image.tag }}"
+{{- end }}
   imagePullPolicy: {{ .Values.image.pullPolicy }}
   readinessProbe:
 {{ toYaml .Values.ingressController.readinessProbe | indent 4 }}
@@ -385,18 +402,31 @@ the template that it itself is using form the above sections.
 
 {{- $_ := set $autoEnv "KONG_LUA_PACKAGE_PATH" "/opt/?.lua;/opt/?/init.lua;;" -}}
 
+{{- if .Values.ingressController.enabled -}}
+  {{- $_ := set $autoEnv "KONG_KIC" "on" -}}
+{{- end -}}
+
 {{/*
 TODO: remove legacy admin listen behavior at a future date
 */}}
 
-{{- if .Values.admin.containerPort -}} {{/* Legacy admin listener */}}
-  {{- if .Values.admin.useTLS -}}
-    {{- $_ := set $autoEnv "KONG_ADMIN_LISTEN" (printf "0.0.0.0:%d ssl" (int64 .Values.admin.containerPort)) -}}
-  {{- else -}}
-    {{- $_ := set $autoEnv "KONG_ADMIN_LISTEN" (printf "0.0.0.0:%d" (int64 .Values.admin.containerPort)) -}}
+{{- with .Values.admin -}}
+  {{- $address := "0.0.0.0" -}}
+  {{- if (not .enabled) -}}
+    {{- $address = "127.0.0.1" -}}
   {{- end -}}
-{{- else -}} {{/* Modern admin listener */}}
-  {{- $_ := set $autoEnv "KONG_ADMIN_LISTEN" (include "kong.listen" .Values.admin) -}}
+  {{- if .containerPort -}} {{/* Legacy admin listener */}}
+    {{- if .useTLS -}}
+      {{- $_ := set $autoEnv "KONG_ADMIN_LISTEN" (printf "%s:%d ssl" $address (int64 .containerPort)) -}}
+    {{- else -}}
+      {{- $_ := set $autoEnv "KONG_ADMIN_LISTEN" (printf "%s:%d" $address (int64 .containerPort)) -}}
+    {{- end -}}
+  {{- else -}} {{/* Modern admin listener */}}
+    {{- $listenConfig := dict -}}
+    {{- $listenConfig := merge $listenConfig . -}}
+    {{- $_ := set $listenConfig "address" $address -}}
+    {{- $_ := set $autoEnv "KONG_ADMIN_LISTEN" (include "kong.listen" $listenConfig) -}}
+  {{- end -}}
 {{- end -}}
 
 {{- if .Values.admin.ingress.enabled }}
@@ -465,6 +495,8 @@ TODO: remove legacy admin listen behavior at a future date
     {{- $_ := set $autoEnv "KONG_ADMIN_EMAILS_REPLY_TO" .Values.enterprise.smtp.admin_emails_reply_to -}}
     {{- $_ := set $autoEnv "KONG_SMTP_ADMIN_EMAILS" .Values.enterprise.smtp.smtp_admin_emails -}}
     {{- $_ := set $autoEnv "KONG_SMTP_HOST" .Values.enterprise.smtp.smtp_host -}}
+    {{- $_ := set $autoEnv "KONG_SMTP_AUTH_TYPE" .Values.enterprise.smtp.smtp_auth_type -}}
+    {{- $_ := set $autoEnv "KONG_SMTP_SSL" .Values.enterprise.smtp.smtp_ssl -}}
     {{- $_ := set $autoEnv "KONG_SMTP_PORT" .Values.enterprise.smtp.smtp_port -}}
     {{- $_ := set $autoEnv "KONG_SMTP_STARTTLS" (quote .Values.enterprise.smtp.smtp_starttls) -}}
     {{- if .Values.enterprise.smtp.auth.smtp_username }}
@@ -550,7 +582,11 @@ Environment variables are sorted alphabetically
 
 {{- define "kong.wait-for-postgres" -}}
 - name: wait-for-postgres
+{{- if .Values.waitImage.unifiedRepoTag }}
+  image: "{{ .Values.waitImage.unifiedRepoTag }}"
+{{- else }}
   image: "{{ .Values.waitImage.repository }}:{{ .Values.waitImage.tag }}"
+{{- end }}
   imagePullPolicy: {{ .Values.waitImage.pullPolicy }}
   env:
   {{- include "kong.no_daemon_env" . | nindent 2 }}
