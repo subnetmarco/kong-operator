@@ -1,3 +1,4 @@
+{{- if .Values.deployment.kong.enabled }}
 {{- if and .Values.proxy.enabled (or .Values.proxy.http.enabled .Values.proxy.tls.enabled) -}}
 apiVersion: v1
 kind: Service
@@ -8,6 +9,7 @@ metadata:
       {{ $key }}: {{ $value | quote }}
     {{- end }}
   labels:
+    enable-metrics: "true"
     {{- include "kong.metaLabels" . | nindent 4 }}
 spec:
   type: {{ .Values.proxy.type }}
@@ -63,4 +65,5 @@ spec:
   {{- end }}
   selector:
     {{- include "kong.selectorLabels" . | nindent 4 }}
+{{- end -}}
 {{- end -}}

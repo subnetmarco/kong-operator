@@ -2,11 +2,23 @@
 # Declare variables to be passed into your templates.
 #
 # Sections:
+# - Deployment parameters
 # - Kong parameters
 # - Ingress Controller parameters
 # - Postgres sub-chart parameters
 # - Miscellaneous parameters
 # - Kong Enterprise parameters
+
+# -----------------------------------------------------------------------------
+# Deployment parameters
+# -----------------------------------------------------------------------------
+
+deployment:
+  kong:
+    # Enable or disable Kong itself
+    # Setting this to false with ingressController.enabled=true will create a
+    # controller-only release.
+    enabled: true
 
 # -----------------------------------------------------------------------------
 # Kong parameters
@@ -36,10 +48,10 @@ image:
   tag: "2.0"
   # kong-enterprise-k8s image (Kong OSS + Enterprise plugins)
   # repository: kong-docker-kong-enterprise-k8s.bintray.io/kong-enterprise-k8s
-  # tag: "2.0.2.0-alpine"
+  # tag: "2.0.4.1-alpine"
   # kong-enterprise image
   # repository: kong-docker-kong-enterprise-edition-docker.bintray.io/kong-enterprise-edition
-  # tag: "1.5.0.0-alpine"
+  # tag: "1.5.0.2-alpine"
 
   pullPolicy: IfNotPresent
   ## Optionally specify an array of imagePullSecrets.
@@ -260,7 +272,7 @@ ingressController:
   enabled: true
   image:
     repository: kong-docker-kubernetes-ingress-controller.bintray.io/kong-ingress-controller
-    tag: 0.8.0
+    tag: 0.9.0
   args: []
 
   # Specify Kong Ingress Controller configuration via environment variables
@@ -397,6 +409,13 @@ livenessProbe:
   successThreshold: 1
   failureThreshold: 3
 
+# Proxy container lifecycle hooks
+# Ref: https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/
+lifecycle:
+  preStop:
+    exec:
+      command: ["/bin/sh", "-c", "/bin/sleep 15 && kong quit"]
+
 # Affinity for pod assignment
 # Ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
 # affinity: {}
@@ -411,6 +430,9 @@ nodeSelector: {}
 
 # Annotation to be added to Kong pods
 podAnnotations: {}
+
+# Labels to be added to Kong pods
+podLabels: {}
 
 # Kong pod count
 replicaCount: 1
@@ -443,13 +465,35 @@ podDisruptionBudget:
 
 podSecurityPolicy:
   enabled: false
+  spec:
+    privileged: false
+    fsGroup:
+      rule: RunAsAny
+    runAsUser:
+      rule: RunAsAny
+    runAsGroup:
+      rule: RunAsAny
+    seLinux:
+      rule: RunAsAny
+    supplementalGroups:
+      rule: RunAsAny
+    volumes:
+      - 'configMap'
+      - 'secret'
+      - 'emptyDir'
+    allowPrivilegeEscalation: false
+    hostNetwork: false
+    hostIPC: false
+    hostPID: false
+    # Make the root filesystem read-only. This is not compatible with Kong Enterprise <1.5.
+    # If you use Kong Enterprise <1.5, this must be set to false.
+    readOnlyRootFilesystem: true
 
 
 priorityClassName: ""
 
 # securityContext for Kong pods.
-securityContext:
-  runAsUser: 1000
+securityContext: {}
 
 serviceMonitor:
   # Specifies whether ServiceMonitor for Prometheus operator should be created
@@ -472,7 +516,7 @@ enterprise:
   # Kong Enterprise license secret name
   # This secret must contain a single 'license' key, containing your base64-encoded license data
   # The license secret is required for all Kong Enterprise deployments
-  license_secret: you-must-create-a-kong-license-secret
+  license_secret: kong-enterprise-license
   vitals:
     enabled: true
   portal:
@@ -483,10 +527,10 @@ enterprise:
     # If RBAC is enabled, this Secret must contain an admin_gui_session_conf key
     # The key value must be a secret configuration, following the example at
     # https://docs.konghq.com/enterprise/latest/kong-manager/authentication/sessions
-    session_conf_secret: you-must-create-an-rbac-session-conf-secret
+    session_conf_secret: kong-session-config
     # If admin_gui_auth is not set to basic-auth, provide a secret name which
     # has an admin_gui_auth_conf key containing the plugin config JSON
-    admin_gui_auth_conf_secret: you-must-create-an-admin-gui-auth-conf-secret
+    admin_gui_auth_conf_secret: CHANGEME-admin-gui-auth-conf-secret
   # For configuring emails and SMTP, please read through:
   # https://docs.konghq.com/enterprise/latest/developer-portal/configuration/smtp
   # https://docs.konghq.com/enterprise/latest/kong-manager/networking/email
@@ -499,6 +543,8 @@ enterprise:
     smtp_admin_emails: none@example.com
     smtp_host: smtp.example.com
     smtp_port: 587
+    smtp_auth_type: nil
+    smtp_ssl: nil
     smtp_starttls: true
     auth:
       # If your SMTP server does not require authentication, this section can
@@ -506,7 +552,7 @@ enterprise:
       # string, you must create a Secret with an smtp_password key containing
       # your SMTP password and specify its name here.
       smtp_username: ''  # e.g. postmaster@example.com
-      smtp_password_secret: you-must-create-an-smtp-password
+      smtp_password_secret: CHANGEME-smtp-password
 
 manager:
   # Enable creating a Kubernetes service for Kong Manager
