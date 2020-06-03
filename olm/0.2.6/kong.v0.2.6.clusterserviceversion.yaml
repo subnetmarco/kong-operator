@@ -145,7 +145,7 @@ spec:
                   value: registry.connect.redhat.com/kong/kong-ingress-controller:0.8.1
                 - name: RELATED_IMAGE_UTILITY
                   value: registry.access.redhat.com/ubi8/ubi:latest
-                  image: registry.connect.redhat.com/kong/kong-operator1:0.2.6-certified
+                image: registry.connect.redhat.com/kong/kong-operator1:0.2.6-certified
                 imagePullPolicy: Always
                 name: kong-operator
               serviceAccountName: kong-operator
