@@ -6,12 +6,12 @@ metadata:
     capabilities: Basic Install
     categories: Networking
     certified: 'true'
-    containerImage: registry.connect.redhat.com/kong/kong-operator1:v0.2.7-certified
+    containerImage: registry.connect.redhat.com/kong/kong-operator1:v0.3.0-certified
     createdAt: '2020-04-10T17:26:45Z'
     description: Install and manage Kong clusters.
     repository: https://github.com/kong/kong-operator
     support: Harry Bagdi
-  name: kong.v0.2.7
+  name: kong.v0.3.0
   namespace: placeholder
 spec:
   customresourcedefinitions:
@@ -145,7 +145,7 @@ spec:
                   value: registry.connect.redhat.com/kong/kong-ingress-controller:0.8.1
                 - name: RELATED_IMAGE_UTILITY
                   value: registry.access.redhat.com/ubi8/ubi:latest
-                  image: registry.connect.redhat.com/kong/kong-operator1:0.2.7-certified
+                  image: registry.connect.redhat.com/kong/kong-operator1:0.3.0-certified
                 imagePullPolicy: Always
                 name: kong-operator
               serviceAccountName: kong-operator
@@ -181,5 +181,5 @@ spec:
   maturity: alpha
   provider:
     name: Kong Inc
-  version: 0.2.7
+  version: 0.3.0
   replaces: kong.v0.2.6
