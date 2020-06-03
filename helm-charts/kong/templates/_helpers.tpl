@@ -218,6 +218,10 @@ The name of the service used for the ingress controller's validation webhook
   emptyDir: {}
 - name: {{ template "kong.fullname" . }}-tmp
   emptyDir: {}
+- name: {{ template "kong.fullname" . }}-bash-wait-for-postgres
+  configMap:
+    name: {{ template "kong.fullname" . }}-bash-wait-for-postgres
+    defaultMode: 0755
 {{- range .Values.plugins.configMaps }}
 - name: kong-plugin-{{ .pluginName }}
   configMap:
@@ -238,9 +242,11 @@ The name of the service used for the ingress controller's validation webhook
     secretName: {{ .name }}
 {{- end }}
 {{- end }}
+{{- if .Values.deployment.kong.enabled }}
 - name: custom-nginx-template-volume
   configMap:
     name: {{ template "kong.fullname" . }}-default-custom-server-blocks
+{{- end }}
 {{- if (and (not .Values.ingressController.enabled) (eq .Values.env.database "off")) }}
 - name: kong-custom-dbless-config-volume
   configMap:
@@ -493,6 +499,8 @@ TODO: remove legacy admin listen behavior at a future date
     {{- $_ := set $autoEnv "KONG_ADMIN_EMAILS_REPLY_TO" .Values.enterprise.smtp.admin_emails_reply_to -}}
     {{- $_ := set $autoEnv "KONG_SMTP_ADMIN_EMAILS" .Values.enterprise.smtp.smtp_admin_emails -}}
     {{- $_ := set $autoEnv "KONG_SMTP_HOST" .Values.enterprise.smtp.smtp_host -}}
+    {{- $_ := set $autoEnv "KONG_SMTP_AUTH_TYPE" .Values.enterprise.smtp.smtp_auth_type -}}
+    {{- $_ := set $autoEnv "KONG_SMTP_SSL" .Values.enterprise.smtp.smtp_ssl -}}
     {{- $_ := set $autoEnv "KONG_SMTP_PORT" .Values.enterprise.smtp.smtp_port -}}
     {{- $_ := set $autoEnv "KONG_SMTP_STARTTLS" (quote .Values.enterprise.smtp.smtp_starttls) -}}
     {{- if .Values.enterprise.smtp.auth.smtp_username }}
@@ -582,11 +590,12 @@ Environment variables are sorted alphabetically
   image: "{{ .Values.waitImage.unifiedRepoTag }}"
 {{- else }}
   image: "{{ .Values.waitImage.repository }}:{{ .Values.waitImage.tag }}"
-  securityContext:
-    runAsUser: 0
 {{- end }}
   imagePullPolicy: {{ .Values.waitImage.pullPolicy }}
   env:
   {{- include "kong.no_daemon_env" . | nindent 2 }}
-  command: [ "/bin/sh", "-c", "set -u; yum -y install nmap-ncat; until ncat -zv $KONG_PG_HOST $KONG_PG_PORT -w1; do echo \"waiting for db - trying ${KONG_PG_HOST}:${KONG_PG_PORT}\"; sleep 1; done" ]
+  command: [ "/bin/bash", "/wait_postgres/wait.sh" ]
+  volumeMounts:
+  - name: {{ template "kong.fullname" . }}-bash-wait-for-postgres
+    mountPath: /wait_postgres
 {{- end -}}
