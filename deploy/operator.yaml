@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: kong-operator
-  namespace: rhelperator
+  namespace: kong
 spec:
   replicas: 1
   selector:
@@ -17,7 +17,7 @@ spec:
       containers:
         - name: kong-operator
           # Replace this with the built image name
-          image: kong-docker-kong-operator.bintray.io/kong-operator:v0.2.1
+          image: registry.connect.redhat.com/kong/kong-operator1:v0.3.0-certified
           imagePullPolicy: Always
           env:
             - name: WATCH_NAMESPACE
