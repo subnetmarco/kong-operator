@@ -1,5 +1,5 @@
 channels:
 - currentCSV: kong.v0.3.0
   name: alpha
-packageName: kong-certified
+packageName: kong-offline-operator
 defaultChannel: alpha
