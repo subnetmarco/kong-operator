@@ -1,0 +1,27 @@
+apiVersion: charts.helm.k8s.io/v1alpha1
+kind: Kong
+metadata:
+  name: kong1
+spec:
+  env:
+    KONG_ANONYMOUS_REPORTS: "false"
+  proxy:
+    type: ClusterIP
+  ingressController:
+    enabled: true
+    ingressClass: kong1
+    installCRDs: false
+---
+apiVersion: charts.helm.k8s.io/v1alpha1
+kind: Kong
+metadata:
+  name: kong2
+spec:
+  env:
+    KONG_ANONYMOUS_REPORTS: "false"
+  proxy:
+    type: ClusterIP
+  ingressController:
+    enabled: true
+    ingressClass: kong2
+    installCRDs: false

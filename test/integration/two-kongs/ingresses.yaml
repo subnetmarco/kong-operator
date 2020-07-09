@@ -1,0 +1,29 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: demo1
+  annotations:
+    kubernetes.io/ingress.class: kong1
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /via-kong1
+        backend:
+          serviceName: echo
+          servicePort: 8080
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: demo2
+  annotations:
+    kubernetes.io/ingress.class: kong2
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /via-kong2
+        backend:
+          serviceName: echo
+          servicePort: 8080
