@@ -8,10 +8,11 @@ jobs:
     steps:
     - name: 'Check out the repo'
       uses: actions/checkout@v2
+
     - name: 'Arrange: Set up microk8s'
       run: |
         sudo snap install microk8s --channel 1.18/stable --classic
-        for addon in dns rbac
+        for addon in dns rbac registry
         do
           sudo microk8s enable $addon
         done
@@ -19,6 +20,14 @@ jobs:
         sudo chown $USER -R ~/.kube
         sudo microk8s.config > ~/.kube/config
         sudo curl -L https://storage.googleapis.com/kubernetes-release/release/v1.18.4/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl
+        kubectl wait --for=condition=Available deploy -n container-registry registry
+
+    - name: 'Build: docker build and push'
+      uses: docker/build-push-action@v1
+      with:
+        repository: localhost:32000/kong-operator
+        tags: ci
+        dockerfile: build/Dockerfile
 
     - name: 'Arrange: Set up Kong Operator'
       run: |
@@ -26,6 +35,7 @@ jobs:
 
         kubectl apply -f deploy/crds/charts_v1alpha1_kong_crd.yaml
         kubectl apply -f deploy/
+        kubectl apply -f test/integration/operator-deployment.yaml
 
         wait_for 'kubectl get deploy -n kong kong-operator -o name' ".+" 30
         kubectl wait --for=condition=Available deploy -n kong kong-operator --timeout=120s
@@ -51,6 +61,7 @@ jobs:
         kubectl wait --for=condition=Available deploy echo --timeout=120s
         wait_for 'kubectl get ingress demo1 -o jsonpath={.status.loadBalancer.ingress}' ".+" 120
         wait_for 'kubectl get ingress demo2 -o jsonpath={.status.loadBalancer.ingress}' ".+" 120
+
     - name: 'Assert: Validate Ingress'
       run: |
         set -x
