@@ -18,7 +18,7 @@ With Kong Operator running in your cluster, you can spin up multiple instances o
     1. Navigate to the [Kong operator at OperatorHub][operatorhub-kong].
     1. Click "Install".
     1. Follow the instructions described in the pop-up in order.
-1. Deploy a Kong Ingress Controller with `example-ingress-class` ingress class (see [the example `Kong` resource][kong-cr-example] for available options):
+1. Deploy a Kong Ingress Controller with `example-ingress-class` Ingress class (see [the example `Kong` resource][kong-cr-example] for available options):
     ```
     kubectl create -f - <<EOF
     apiVersion: charts.helm.k8s.io/v1alpha1
@@ -43,7 +43,7 @@ With Kong Operator running in your cluster, you can spin up multiple instances o
         installCRDs: false
     EOF
     ```
-1. Deploy an example Service and expose it with ingress:
+1. Deploy an example Service and expose it with an Ingress:
     1. Deploy the echo service:
         ```
         kubectl apply -f https://bit.ly/echo-service
