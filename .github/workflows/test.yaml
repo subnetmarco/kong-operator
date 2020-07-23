@@ -74,3 +74,21 @@ jobs:
 
         [ "$(curl -sw '%{http_code}' -o /dev/null http://$PROXY1_IP/via-kong2/)" == 404 ]
         [ "$(curl -sw '%{http_code}' -o /dev/null http://$PROXY2_IP/via-kong1/)" == 404 ]
+
+    - name: 'Print debugging information'
+      if: ${{ always() }}
+      run: |
+        set -x
+
+        kubectl describe all -n default || true
+        kubectl describe all -n kong || true
+        kubectl describe all -n kube-system || true
+        kubectl logs -n kong -l name=kong-operator || true
+
+        for ns in default kong; do
+          for podName in $(kubectl get pod -n "$ns" -o name); do
+            for containerName in $(kubectl get "$podName" -n "$ns" -o jsonpath='{range .spec.containers[*]}{.name}{"\n"}{end}'); do
+              kubectl logs "$podName" -n "$ns" -c "$containerName"
+            done
+          done
+        done
