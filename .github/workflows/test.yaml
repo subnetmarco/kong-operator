@@ -20,7 +20,7 @@ jobs:
         sudo chown $USER -R ~/.kube
         sudo microk8s.config > ~/.kube/config
         sudo curl -L https://storage.googleapis.com/kubernetes-release/release/v1.18.4/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl
-        kubectl wait --for=condition=Available deploy -n container-registry registry
+        kubectl wait --for=condition=Available deploy -n container-registry registry --timeout=120s
 
     - name: 'Build: docker build and push'
       uses: docker/build-push-action@v1
@@ -80,12 +80,9 @@ jobs:
       run: |
         set -x
 
-        kubectl describe all -n default || true
-        kubectl describe all -n kong || true
-        kubectl describe all -n kube-system || true
-        kubectl logs -n kong -l name=kong-operator || true
+        for ns in default kong kube-system container-registry; do
+          kubectl describe all -n "$ns"
 
-        for ns in default kong; do
           for podName in $(kubectl get pod -n "$ns" -o name); do
             for containerName in $(kubectl get "$podName" -n "$ns" -o jsonpath='{range .spec.containers[*]}{.name}{"\n"}{end}'); do
               kubectl logs "$podName" -n "$ns" -c "$containerName"
