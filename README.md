@@ -2,6 +2,8 @@
 [![][kong-logo]][kong-url]
 
 ![Test status badge](https://github.com/Kong/kong-operator/workflows/Test/badge.svg)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/Kong/kong-operator/blob/master/LICENSE)
+[![Twitter](https://img.shields.io/twitter/follow/thekonginc.svg?style=social&label=Follow)](https://twitter.com/intent/follow?screen_name=thekonginc)
 
 **Kong Operator** is a Kubernetes [operator](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/) which manages [Kong Ingress Controller](https://github.com/Kong/kubernetes-ingress-controller/) instances.
 
