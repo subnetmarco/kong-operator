@@ -1,6 +1,8 @@
 # Kong Operator
 [![][kong-logo]][kong-url]
 
+![Test status badge](https://github.com/Kong/kong-operator/workflows/Test/badge.svg)
+
 **Kong Operator** is a Kubernetes [operator](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/) which manages [Kong Ingress Controller](https://github.com/Kong/kubernetes-ingress-controller/) instances.
 
 With Kong Operator running in your cluster, you can spin up multiple instances of Kong, each of them configured by a `Kong` custom resource ([example][kong-cr-example]). See the [Quick Start][quick-start] section below to get up and running.
