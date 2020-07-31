@@ -7,7 +7,7 @@
 
 **Kong Operator** is a Kubernetes [operator](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/) which manages [Kong Ingress Controller](https://github.com/Kong/kubernetes-ingress-controller/) instances.
 
-With Kong Operator running in your cluster, you can spin up multiple instances of Kong, each of them configured by a `Kong` custom resource ([example][kong-cr-example]). See the [Quick Start][quick-start] section below to get up and running.
+With Kong Operator running in your cluster, you can spin up multiple instances of Kong, each of them configured by a `Kong` custom resource ([example][kong-cr-example]). See the [Quick Start][section-quick-start] section below to get up and running.
 
 ## Supported Kubernetes versions
 
@@ -22,7 +22,7 @@ With Kong Operator running in your cluster, you can spin up multiple instances o
     1. Navigate to the [Kong operator at OperatorHub][operatorhub-kong].
     1. Click "Install".
     1. Follow the instructions described in the pop-up in order.
-1. Deploy a Kong Ingress Controller with `example-ingress-class` Ingress class (see [the example `Kong` resource][kong-cr-example] for available options):
+1. Deploy a Kong Ingress Controller with `example-ingress-class` Ingress class (see [_Configuration_ section][section-configuration] for available options):
     ```
     kubectl create -f - <<EOF
     apiVersion: charts.helm.k8s.io/v1alpha1
@@ -97,11 +97,35 @@ With Kong Operator running in your cluster, you can spin up multiple instances o
     kubectl delete kong example-kong
     ```
 
+## Configuration
 
+### Helm Operator
+
+For every `Kong` resource applied to the cluster by `kubectl apply`, Kong Operator (being a [_Helm operator_][operator-sdk-helm] under the hood) operates a Helm release of [this Helm chart][helm-chart].
+If you're interested in the inner workings, refer to [the official Helm documentation][helm-docs]. Note, though, that Kong Operator takes all the responsibility of running Helm. You are expected not to interact with Helm at all.
+
+- When you `kubectl create` a `Kong` resource, Kong Operator will asynchronously install a new Helm release of Kong.
+- When you `kubectl edit` or `kubectl patch` (or edit in some another way) an existing `Kong` resource, Kong Operator will upgrade the existing release of Kong.
+- When you `kubectl delete` a `Kong` resource, Kong Operator will delete the existing release of Kong from the cluster.
+
+Stopping the operator does not affect running Kong releases.
+
+### `Kong` Spec
+
+You can tailor the configuration of a Kong running in your Kubernetes cluster (if you have chosen Kong Operator as the way of deploying Kong) by defining the desired settings in the `.spec` field of the [`Kong` resource][kong-cr-example].
+
+The reference of the `.spec` object (as well as the default values for unset fields) is the [`values.yaml`][helm-values-yaml] file.
+
+If you create a `Kong` with an empty `.spec`, the Kong will have the default configuration (as per `values.yaml`). You can override a certain setting (e.g. `ingressController.enabled`) by setting the corresponding field under `.spec` of the `Kong` resource (in the aforementioned example: `.spec.ingressController.enabled`).
 
 [kong-url]: https://konghq.com/
 [kong-logo]: https://konghq.com/wp-content/uploads/2018/05/kong-logo-github-readme.png
 [kong-cr-example]: deploy/crds/charts_v1alpha1_kong_cr.yaml
 [microk8s]: https://microk8s.io
-[quick-start]: #quick-start
+[section-quick-start]: #quick-start
+[section-configuration]: #configuration
+[helm-chart]: https://github.com/Kong/kong-operator/tree/master/helm-charts/kong
+[helm-values-yaml]: https://github.com/Kong/kong-operator/blob/master/helm-charts/kong/values.yaml
 [operatorhub-kong]: https://operatorhub.io/operator/kong
+[operator-sdk-helm]: https://sdk.operatorframework.io/docs/helm/
+[helm-docs]: https://helm.sh/docs/intro/using_helm/
