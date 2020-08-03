@@ -1,4 +1,4 @@
-apiVersion: operators.coreos.com/v1alpha1
+apiVersion: operators.coreos.com/v3alpha1
 kind: ClusterServiceVersion
 metadata:
   annotations:
@@ -182,3 +182,4 @@ spec:
   provider:
     name: Kong Inc
   version: 0.3.0
+  replaces: kong.v0.2.6

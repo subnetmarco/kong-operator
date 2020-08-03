@@ -1,0 +1,91 @@
+name: Test
+
+on: [push]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: 'Check out the repo'
+      uses: actions/checkout@v2
+
+    - name: 'Arrange: Set up microk8s'
+      run: |
+        sudo snap install microk8s --channel 1.18/stable --classic
+        for addon in dns rbac registry
+        do
+          sudo microk8s enable $addon
+        done
+        mkdir -p ~/.kube
+        sudo chown $USER -R ~/.kube
+        sudo microk8s.config > ~/.kube/config
+        sudo curl -L https://storage.googleapis.com/kubernetes-release/release/v1.18.4/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl
+        kubectl wait --for=condition=Available deploy -n container-registry registry --timeout=120s
+
+    - name: 'Build: docker build and push'
+      uses: docker/build-push-action@v1
+      with:
+        repository: localhost:32000/kong-operator
+        tags: ci
+        dockerfile: build/Dockerfile
+
+    - name: 'Arrange: Set up Kong Operator'
+      run: |
+        . test/integration/helpers.sh
+
+        kubectl apply -f deploy/crds/charts_v1alpha1_kong_crd.yaml
+        kubectl apply -f deploy/
+        kubectl apply -f test/integration/operator-deployment.yaml
+
+        wait_for 'kubectl get deploy -n kong kong-operator -o name' ".+" 30
+        kubectl wait --for=condition=Available deploy -n kong kong-operator --timeout=120s
+
+    - name: 'Act: Create workloads'
+      run: |
+        kubectl apply -f https://bit.ly/echo-service
+        kubectl apply -f test/integration/two-kongs/ingresses.yaml
+
+    - name: 'Act: Wait, create Kongs'
+      run: |
+        . test/integration/helpers.sh
+
+        kubectl apply -f test/integration/two-kongs/kongs.yaml
+
+        kubectl logs -n kong -l name=kong-operator
+
+        wait_for 'kubectl get deploy kong1-kong -o name' ".+" 30
+        kubectl wait --for=condition=Available deploy kong1-kong --timeout=120s
+        wait_for 'kubectl get deploy kong2-kong -o name' ".+" 30
+        kubectl wait --for=condition=Available deploy kong2-kong --timeout=120s
+
+        kubectl wait --for=condition=Available deploy echo --timeout=120s
+        wait_for 'kubectl get ingress demo1 -o jsonpath={.status.loadBalancer.ingress}' ".+" 120
+        wait_for 'kubectl get ingress demo2 -o jsonpath={.status.loadBalancer.ingress}' ".+" 120
+
+    - name: 'Assert: Validate Ingress'
+      run: |
+        set -x
+
+        PROXY1_IP=$(kubectl get service kong1-kong-proxy -o jsonpath={.spec.clusterIP})
+        PROXY2_IP=$(kubectl get service kong2-kong-proxy -o jsonpath={.spec.clusterIP})
+
+        [ "$(curl -sw '%{http_code}' -o /dev/null http://$PROXY1_IP/via-kong1/)" == 200 ]
+        [ "$(curl -sw '%{http_code}' -o /dev/null http://$PROXY2_IP/via-kong2/)" == 200 ]
+
+        [ "$(curl -sw '%{http_code}' -o /dev/null http://$PROXY1_IP/via-kong2/)" == 404 ]
+        [ "$(curl -sw '%{http_code}' -o /dev/null http://$PROXY2_IP/via-kong1/)" == 404 ]
+
+    - name: 'Print debugging information'
+      if: ${{ always() }}
+      run: |
+        set -x
+
+        for ns in default kong kube-system container-registry; do
+          kubectl describe all -n "$ns"
+
+          for podName in $(kubectl get pod -n "$ns" -o name); do
+            for containerName in $(kubectl get "$podName" -n "$ns" -o jsonpath='{range .spec.containers[*]}{.name}{"\n"}{end}'); do
+              kubectl logs "$podName" -n "$ns" -c "$containerName"
+            done
+          done
+        done
