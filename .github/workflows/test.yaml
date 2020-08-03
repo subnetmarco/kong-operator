@@ -3,7 +3,29 @@ name: Test
 on: [push]
 
 jobs:
-  test:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: 'Check out the repo'
+      uses: actions/checkout@v2
+
+    - name: 'Build: docker build'
+      uses: docker/build-push-action@v1
+      with:
+        repository: kong-operator
+        tags: ci
+        dockerfile: build/Dockerfile
+        push: false
+
+    - run: docker save kong-operator:ci > kong-operator-ci.tar
+
+    - uses: actions/upload-artifact@v2
+      with:
+        name: operator-image
+        path: kong-operator-ci.tar
+
+  test-k8s:
+    needs: build
     runs-on: ubuntu-latest
     steps:
     - name: 'Check out the repo'
@@ -22,12 +44,15 @@ jobs:
         sudo curl -L https://storage.googleapis.com/kubernetes-release/release/v1.18.4/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl
         kubectl wait --for=condition=Available deploy -n container-registry registry --timeout=120s
 
-    - name: 'Build: docker build and push'
-      uses: docker/build-push-action@v1
+    - uses: actions/download-artifact@v2
       with:
-        repository: localhost:32000/kong-operator
-        tags: ci
-        dockerfile: build/Dockerfile
+        name: operator-image
+
+    - name: 'Arrange: Push the Kong Operator image to the local registry'
+      run: |
+        docker load < kong-operator-ci.tar
+        docker tag kong-operator:ci localhost:32000/kong-operator:ci
+        docker push localhost:32000/kong-operator:ci
 
     - name: 'Arrange: Set up Kong Operator'
       run: |
