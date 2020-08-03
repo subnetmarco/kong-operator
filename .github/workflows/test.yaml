@@ -3,6 +3,21 @@ name: Test
 on: [push]
 
 jobs:
+  validate-olm:
+    runs-on: ubuntu-latest
+    steps:
+    - name: 'Check out the repo'
+      uses: actions/checkout@v2
+
+    # This step performs the validation. Errors can be found in the stderr of `docker build`.
+    - name: 'Test the OLM configuration by building the Docker image'
+      uses: docker/build-push-action@v1
+      with:
+        repository: olm-registry
+        tags: ci
+        dockerfile: test/olm-validation/Dockerfile.olm
+        push: false
+
   test:
     runs-on: ubuntu-latest
     steps:

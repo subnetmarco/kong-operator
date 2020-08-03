@@ -1,0 +1,8 @@
+# This Dockerfile mimics the verification part of
+# https://github.com/operator-framework/community-operators/blob/master/upstream.Dockerfile .
+# Building this Dockerfile successfully is an approximation of the test run on PRs
+# to https://github.com/operator-framework/community-operators/ .
+
+FROM quay.io/operator-framework/upstream-registry-builder:v1.13.3 as builder
+COPY olm manifests/kong
+RUN ./bin/initializer -o ./bundles.db
