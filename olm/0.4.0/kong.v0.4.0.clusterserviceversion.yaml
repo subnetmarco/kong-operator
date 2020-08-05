@@ -43,7 +43,7 @@ spec:
     The primary documentation site for Kong Operator is located [in its GitHub repository](https://github.com/Kong/kong-operator/blob/v0.4.0/README.md).
 
     Kong Operator provides the same configuration flexibility as the Kong Helm chart.
-    Refer to the [documentation of the Helm chart](https://github.com/Kong/kong-operator/blob/v0.4.0/helm-charts/kong/README.md) used by this version of Kong Operator,
+    Refer to the [Helm chart documentation](https://github.com/Kong/kong-operator/blob/v0.4.0/helm-charts/kong/README.md),
     the [Configuration](https://github.com/Kong/kong-operator/blob/v0.4.0/README.md#configuration) section of Kong Operator docs, and the example `Kong` resource below.
 
   displayName: Kong Operator
