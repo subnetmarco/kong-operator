@@ -17,7 +17,7 @@ metadata:
 spec:
   customresourcedefinitions:
     owned:
-    - description: Defines a Kong cluster (equivalent to a Helm release).
+    - description: Defines a Kong cluster (equivalent to a Helm release). Uses the same settings as the Helm chart's values.yaml
       displayName: Kong
       kind: Kong
       name: kongs.charts.helm.k8s.io
