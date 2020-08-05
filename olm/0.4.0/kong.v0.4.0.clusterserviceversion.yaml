@@ -174,7 +174,7 @@ spec:
   - name: Quick Start Guide
     url: https://github.com/Kong/kong-operator/blob/v0.4.0/README.md#quick-start
   - name: Helm Chart Source
-    url: https://github.com/kong/kong-operator/tree/v0.4.0/charts/kong/
+    url: https://github.com/kong/kong-operator/tree/v0.4.0/helm-charts/kong/
   maintainers:
   - email: harry@konghq.com
     name: Harry
