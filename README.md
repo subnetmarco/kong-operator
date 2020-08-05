@@ -2,7 +2,7 @@
 [![][kong-logo]][kong-url]
 
 ![Test status badge](https://github.com/Kong/kong-operator/workflows/Test/badge.svg)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/Kong/kong-operator/blob/master/LICENSE)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/Kong/kong-operator/blob/main/LICENSE)
 [![Twitter](https://img.shields.io/twitter/follow/thekonginc.svg?style=social&label=Follow)](https://twitter.com/intent/follow?screen_name=thekonginc)
 
 **Kong Operator** is a Kubernetes [operator](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/) which manages [Kong Ingress Controller](https://github.com/Kong/kubernetes-ingress-controller/) instances.
@@ -124,8 +124,8 @@ If you create a `Kong` with an empty `.spec`, the Kong will have the default con
 [microk8s]: https://microk8s.io
 [section-quick-start]: #quick-start
 [section-configuration]: #configuration
-[helm-chart]: https://github.com/Kong/kong-operator/tree/master/helm-charts/kong
-[helm-values-yaml]: https://github.com/Kong/kong-operator/blob/master/helm-charts/kong/values.yaml
+[helm-chart]: https://github.com/Kong/kong-operator/tree/main/helm-charts/kong
+[helm-values-yaml]: https://github.com/Kong/kong-operator/blob/main/helm-charts/kong/values.yaml
 [operatorhub-kong]: https://operatorhub.io/operator/kong
 [operator-sdk-helm]: https://sdk.operatorframework.io/docs/helm/
 [helm-docs]: https://helm.sh/docs/intro/using_helm/
