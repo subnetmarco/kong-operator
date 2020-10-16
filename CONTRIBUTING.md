@@ -26,6 +26,7 @@ _For maintainers only_. These instructions require certain privileges (pushing t
         - Set `replace` to the previous latest version.
     - Update `/olm/kong.package.yaml` similarly to [#42](https://github.com/Kong/kong-operator/pull/42)
     - Merge these changes to `main`.
+1. Update CHANGELOG.md. If Helm chart changes include breaking changes, please include a link to their [UPGRADE.md](https://github.com/Kong/charts/blob/main/charts/kong/UPGRADE.md) section under a **Breaking Changes** header.
 1. Ensure that `HEAD` of `main` with all the above changes has a green CI status.
 1. Create a Git tag in the format `vX.Y.Z`.
 1. Create a GitHub [release](https://github.com/Kong/kong-operator/releases) from the new tag.
