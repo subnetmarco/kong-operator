@@ -17,21 +17,22 @@ Follow these instructions in order to release a new version of Kong Operator fro
 _For maintainers only_. These instructions require certain privileges (pushing the Docker image to Bintray, pushing Git tags, etc.).
 
 1. Ensure that `HEAD` of `main` defines the release candidate of the operator:
-    - `Dockerfile` + dependencies such as the Helm chart,
-    - `deploy/` manifests pointing to the new (nonexistent yet) operator image tag.
+    - set the right version in `build/Dockerfile`,
+    - update the Helm chart vendored in this repo (in a clean working copy, run `./hack/update-kong-chart.sh kong-vA.B.C` where `kong-vA.B.C` is an existing tag in the charts repository)
+    - ensure that `deploy/` manifests point to the new (nonexistent yet) operator image tag.
 1. Define an OperatorHub release spec:
     - Create `/olm/X.Y.Z/` with the CSV and CRD manifests, similarly to [#37](https://github.com/Kong/kong-operator/pull/37) and [#39](https://github.com/Kong/kong-operator/pull/39). Pay particular attention to the following:
        - Always define [`skipRange`](https://docs.openshift.com/container-platform/4.2/operators/understanding_olm/olm-understanding-olm.html#olm-upgrades-replacing-multiple_olm-understanding-olm) to specify a range of versions which support a direct update to the version you're releasing,
-        - Set `replace` to the previous latest version.     
+        - Set `replace` to the previous latest version.
     - Update `/olm/kong.package.yaml` similarly to [#42](https://github.com/Kong/kong-operator/pull/42)
-    - Merge these changes to `main`. 
+    - Merge these changes to `main`.
 1. Ensure that `HEAD` of `main` with all the above changes has a green CI status.
 1. Create a Git tag in the format `vX.Y.Z`.
 1. Create a GitHub [release](https://github.com/Kong/kong-operator/releases) from the new tag.
 1. Navigate to [the Test workflow](https://github.com/Kong/kong-operator/actions?query=workflow%3ATest) on GitHub Actions, find the run labeled with  the `vX.Y.Z`, and download the build artifact called **operator-image**. This is the Docker image which you will push to Bintray in the following step.
 1. Push the `kong-operator` image to Bintray:
     - `docker login` to the `kong-operator` registry on Bintray: click _Set me up_ on the [kong-operator registry page](https://bintray.com/beta/#/kong/kong-operator/kong-operator?tab=overview) for instructions.
-    - 
+    -
         ```bash
         # Unzip the artifact downloaded from GitHub.
         unzip operator-image.zip
