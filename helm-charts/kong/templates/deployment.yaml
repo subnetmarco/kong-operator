@@ -3,13 +3,16 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ template "kong.fullname" . }}
+  namespace:  {{ .Release.Namespace }}
   labels:
     {{- include "kong.metaLabels" . | nindent 4 }}
     app.kubernetes.io/component: app
+  {{- if .Values.deploymentAnnotations }}
   annotations:
-    {{- if .Values.deploymentAnnotations }}
-{{ toYaml .Values.deploymentAnnotations | indent 4 }}
-    {{- end }}
+  {{- range $key, $value := .Values.deploymentAnnotations }}
+    {{ $key }}: {{ $value | quote }}
+  {{- end }}
+  {{- end }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
@@ -32,7 +35,9 @@ spec:
         {{- end }}
         {{- end }}
         {{- if .Values.podAnnotations }}
-{{ toYaml .Values.podAnnotations | indent 8 }}
+        {{- range $key, $value := .Values.podAnnotations }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
         {{- end }}
       labels:
         {{- include "kong.metaLabels" . | nindent 8 }}
@@ -63,6 +68,9 @@ spec:
       {{- if .Values.ingressController.enabled }}
       {{- include "kong.controller-container" . | nindent 6 }}
       {{ end }}
+      {{- if .Values.deployment.sidecarContainers }}
+      {{- toYaml .Values.deployment.sidecarContainers | nindent 6 }}
+      {{- end }}
       {{- if .Values.deployment.kong.enabled }}
       - name: "proxy"
         {{- if .Values.image.unifiedRepoTag }}
@@ -141,6 +149,14 @@ spec:
           {{- end}}
           protocol: TCP
         {{- end }}
+        {{- if (and .Values.cluster.tls.enabled .Values.cluster.enabled) }}
+        - name: cluster-tls
+          containerPort: {{ .Values.cluster.tls.containerPort }}
+          {{- if .Values.cluster.tls.hostPort }}
+          hostPort: {{ .Values.cluster.tls.hostPort }}
+          {{- end}}
+          protocol: TCP
+        {{- end }}
         - name: metrics
           containerPort: 9542
           protocol: TCP
@@ -195,6 +211,14 @@ spec:
           containerPort: {{ .Values.portalapi.tls.containerPort }}
           {{- if .Values.portalapi.tls.hostPort }}
           hostPort: {{ .Values.portalapi.tls.hostPort }}
+          {{- end}}
+          protocol: TCP
+        {{- end }}
+        {{- if (and .Values.clustertelemetry.tls.enabled .Values.clustertelemetry.enabled) }}
+        - name: clustert-tls
+          containerPort: {{ .Values.clustertelemetry.tls.containerPort }}
+          {{- if .Values.clustertelemetry.tls.hostPort }}
+          hostPort: {{ .Values.clustertelemetry.tls.hostPort }}
           {{- end}}
           protocol: TCP
         {{- end }}

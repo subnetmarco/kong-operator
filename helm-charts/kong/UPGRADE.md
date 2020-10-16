@@ -17,6 +17,9 @@ upgrading from a previous version.
 ## Table of contents
 
 - [Upgrade considerations for all versions](#upgrade-considerations-for-all-versions)
+- [1.11.0](#1111)
+- [1.10.0](#1100)
+- [1.9.0](#190)
 - [1.6.0](#160)
 - [1.5.0](#150)
 - [1.4.0](#140)
@@ -34,7 +37,7 @@ migrations finish`.
 
 If you split your Kong deployment across multiple Helm releases (to create
 proxy-only and admin-only nodes, for example), you must
-[set which migration jobs run based on your upgrade order](https://github.com/Kong/charts/blob/master/charts/kong/README.md#separate-admin-and-proxy-nodes).
+[set which migration jobs run based on your upgrade order](https://github.com/Kong/charts/blob/main/charts/kong/README.md#separate-admin-and-proxy-nodes).
 
 While the migrations themselves are automated, the chart does not automatically
 ensure that you follow the recommended upgrade path. If you are upgrading from
@@ -51,6 +54,116 @@ text ending with `field is immutable`. This is typically due to a bug with the
 `init-migrations` job, which was not removed automatically prior to 1.5.0.
 If you encounter this error, deleting any existing `init-migrations` jobs will
 clear it.
+
+## 1.11.0
+
+### `KongCredential` custom resources no longer supported
+
+1.11.0 updates the default Kong Ingress Controller version to 1.0. Controller
+1.0 removes support for the deprecated KongCredential resource. Before
+upgrading to chart 1.11.0, you must convert existing KongCredential resources
+to [credential Secrets](https://github.com/Kong/kubernetes-ingress-controller/blob/next/docs/guides/using-consumer-credential-resource.md#provision-a-consumer).
+
+Custom resource management varies depending on your exact chart configuration.
+By default, Helm 3 only creates CRDs in the `crds` directory if they are not
+already present, and does not modify or remove them after. If you use this
+management method, you should create a manifest file that contains [only the
+KongCredential CRD](https://github.com/Kong/charts/blob/kong-1.10.0/charts/kong/crds/custom-resource-definitions.yaml#L35-L68)
+and then [delete it](https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/#delete-a-customresourcedefinition).
+
+Helm 2 and Helm 3 both allow managing CRDs via the chart. In Helm 2, this is
+required; in Helm 3, it is optional. When using this method, only a single
+release will actually manage the CRD. Check to see which release has
+`ingressController.installCRDs: true` to determine which does so if you have
+multiple releases. When using this management method, upgrading a release to
+chart 1.11.0 will delete the KongCredential CRD during the upgrade, which will
+_delete any existing KongCredential resources_. To avoid losing configuration,
+check to see if your CRD is managed:
+
+```
+kubectl get crd kongcredentials.configuration.konghq.com -o yaml | grep "app.kubernetes.io/managed-by: Helm"
+```
+
+If that command returns output, your CRD is managed and you must convert to
+credential Secrets before upgrading (you should do so regardless, but are not
+at risk of losing data, and can downgrade to an older chart version if you have
+issues).
+
+### Changes to CRDs
+
+Controller 1.0 [introduces a status field](https://github.com/Kong/kubernetes-ingress-controller/blob/main/CHANGELOG.md#added)
+for its custom resources. By default, Helm 3 does not apply updates to custom
+resource definitions if those definitions are already present on the Kubernetes
+API server (and they will be if you are upgrading a release from a previous
+chart version). To update your custom resources:
+
+```
+kubectl apply -f https://raw.githubusercontent.com/Kong/charts/main/charts/kong/crds/custom-resource-definitions.yaml
+```
+
+### Deprecated controller flags/environment variables and annotations removed
+
+Kong Ingress Controller 0.x versions had a number of deprecated
+flags/environment variables and annotations. Version 1.0 removes support for
+these, and you must update your configuration to use their modern equivalents
+before upgrading to chart 1.11.0.
+
+The [controller changelog](https://github.com/Kong/kubernetes-ingress-controller/blob/master/CHANGELOG.md#breaking-changes)
+provides links to lists of deprecated configuration and their replacements.
+
+## 1.10.0
+
+### `KongClusterPlugin` replaces global `KongPlugin`s
+
+Kong Ingress Controller 0.10.0 no longer supports `KongPlugin`s with a `global: true` label. See the [KIC changelog for 0.10.0](https://github.com/Kong/kubernetes-ingress-controller/blob/main/CHANGELOG.md#0100---20200915) for migration hints.
+
+### Dropping support for resources not specifying an ingress class
+
+Kong Ingress Controller 0.10.0 drops support for certain kinds of resources without a `kubernetes.io/ingress.class` annotation. See the [KIC changelog for 0.10.0](https://github.com/Kong/kubernetes-ingress-controller/blob/main/CHANGELOG.md#0100---20200915) for the exact list of those kinds, and for possible migration paths.
+
+## 1.9.0
+
+### New image for Enterprise controller-managed DB-less deployments
+
+As of Kong Enterprise 2.1.3.0, there is no longer a separate image
+(`kong-enterprise-k8s`) for controller-managed DB-less deployments. All Kong
+Enterprise deployments now use the `kong-enterprise-edition` image.
+
+Existing users of the `kong-enterprise-k8s` image can use the latest
+`kong-enterprise-edition` image as a drop-in replacement for the
+`kong-enterprise-k8s` image. You will also need to [create a Docker registry
+secret](https://github.com/Kong/charts/blob/main/charts/kong/README.md#kong-enterprise-docker-registry-access)
+for the `kong-enterprise-edition` registry and add it to `image.pullSecrets` in
+values.yaml if you do not have one already.
+
+### Changes to wait-for-postgres image
+
+Prior to 1.9.0, the chart launched a busybox initContainer for migration Pods
+to check Postgres' reachability [using
+netcat](https://github.com/Kong/charts/blob/kong-1.8.0/charts/kong/templates/_helpers.tpl#L626).
+
+As of 1.9.0, the chart uses a [bash
+script](https://github.com/Kong/charts/blob/kong-1.9.0/charts/kong/templates/wait-for-postgres-script.yaml)
+to perform the same connectivity check. The default `waitImage.repository`
+value is now `bash` rather than `busybox`. Double-check your values.yaml to
+confirm that you do not set `waitImage.repository` and `waitImage.tag` to the
+old defaults: if you do, remove that configuration before upgrading.
+
+The Helm upgrade cycle requires this script be available for upgrade jobs. On
+existing installations, you must first perform an initial `helm upgrade --set
+migrations.preUpgrade=false --migrations.postUpgrade=false` to chart 1.9.0.
+Perform this initial upgrade without making changes to your Kong image version:
+if you are upgrading Kong along with the chart, perform a separate upgrade
+after with the migration jobs re-enabled.
+
+If you do not override `waitImage.repository` in your releases, you do not need
+to make any other configuration changes when upgrading to 1.9.0.
+
+If you do override `waitImage.repository` to use a custom image, you must
+switch to a custom image that provides a `bash` executable. Note that busybox
+images, or images derived from it, do _not_ include a `bash` executable. We
+recommend switching to an image derived from the public bash Docker image or a
+base operating system image that provides a `bash` executable.
 
 ## 1.6.0
 
@@ -117,9 +230,9 @@ values.yaml.
 
 The new format addresses several needs:
 * The initial migrations job are only created during the initial install,
-  preventing [conflicts on upgrades](https://github.com/Kong/charts/blob/master/charts/kong/FAQs.md#running-helm-upgrade-fails-because-of-old-init-migrations-job).
+  preventing [conflicts on upgrades](https://github.com/Kong/charts/blob/main/charts/kong/FAQs.md#running-helm-upgrade-fails-because-of-old-init-migrations-job).
 * The upgrade migrations jobs can be disabled as need for managing
-  [multi-release clusters](https://github.com/Kong/charts/blob/master/charts/kong/README.md#separate-admin-and-proxy-nodes).
+  [multi-release clusters](https://github.com/Kong/charts/blob/main/charts/kong/README.md#separate-admin-and-proxy-nodes).
   This enables management of clusters that have nodes with different roles,
   e.g. nodes that only run the proxy and nodes that only run the admin API.
 * Migration jobs now allow specifying annotations, and provide a default set
@@ -182,7 +295,7 @@ This is a new annotation that is equivalent to the `route.strip_path` setting
 in KongIngress resources. Note that if you have already set this to `false`,
 you should leave it as-is and not add an annotation to the ingress.
 
-### Changes to Kong service configuration 
+### Changes to Kong service configuration
 
 1.4.0 reworks the templates and configuration used to generate Kong
 configuration and Kuberenetes resources for Kong's services (the admin API,
