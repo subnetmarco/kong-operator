@@ -5,7 +5,7 @@ ADD LICENSE /licenses/LICENSE
 LABEL name="kong-operator" \
       maintainer="harry@konghq.com" \
       vendor="Kong Inc" \
-      version="v0.2.1" \
+      version="v0.5.0" \
       summary="kong-operator installs and manages Kong in your k8s environemnt" \
       description="kong-operator installs and manages Kong in your k8s environemnt"
 

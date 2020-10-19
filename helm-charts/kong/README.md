@@ -52,8 +52,8 @@ $ helm install kong/kong --generate-name --set ingressController.installCRDs=fal
   - [RBAC](#rbac)
   - [Sessions](#sessions)
   - [Email/SMTP](#emailsmtp)
-- [Changelog](https://github.com/Kong/charts/blob/master/charts/kong/CHANGELOG.md)
-- [Upgrading](https://github.com/Kong/charts/blob/master/charts/kong/UPGRADE.md)
+- [Changelog](https://github.com/Kong/charts/blob/main/charts/kong/CHANGELOG.md)
+- [Upgrading](https://github.com/Kong/charts/blob/main/charts/kong/UPGRADE.md)
 - [Seeking help](#seeking-help)
 
 ## Prerequisites
@@ -117,7 +117,7 @@ chart and deletes the release.
 ## FAQs
 
 Please read the
-[FAQs](https://github.com/Kong/charts/blob/master/charts/kong/FAQs.md)
+[FAQs](https://github.com/Kong/charts/blob/main/charts/kong/FAQs.md)
 document.
 
 ## Kong Enterprise
@@ -217,9 +217,9 @@ Kong can be configured via two methods:
   This is also known as Kong Ingress Controller or Kong for Kubernetes and is
   the default deployment pattern for this Helm Chart. The configuration
   for Kong is managed via Ingress and a few
-  [Custom Resources](https://github.com/Kong/kubernetes-ingress-controller/blob/master/docs/concepts/custom-resources.md).
+  [Custom Resources](https://github.com/Kong/kubernetes-ingress-controller/blob/main/docs/concepts/custom-resources.md).
   For more details, please read the
-  [documentation](https://github.com/Kong/kubernetes-ingress-controller/tree/master/docs)
+  [documentation](https://github.com/Kong/kubernetes-ingress-controller/tree/main/docs)
   on Kong Ingress Controller.
   To configure and fine-tune the controller, please read the
   [Ingress Controller Parameters](#ingress-controller-parameters) section.
@@ -363,6 +363,18 @@ proxy:
   enabled: false
 ```
 
+Enterprise users with Vitals enabled must also enable the cluster telemetry
+service:
+
+```yaml
+clustertelemetry:
+  enabled: true
+  tls:
+    enabled: true
+    servicePort: 8006
+    containerPort: 8006
+```
+
 If using the ingress controller, you must also specify the DP proxy service as
 its publish target to keep Ingress status information up to date:
 
@@ -404,6 +416,7 @@ env:
   cluster_cert_key: /etc/secrets/kong-cluster-cert/tls.key
   lua_ssl_trusted_certificate: /etc/secrets/kong-cluster-cert/tls.crt
   cluster_control_plane: control-plane-release-name-kong-cluster.hybrid.svc.cluster.local:8005
+  cluster_telemetry_endpoint: control-plane-release-name-kong-clustertelemetry.hybrid.svc.cluster.local:8006 # Enterprise-only
 ```
 
 Note that the `cluster_control_plane` value will differ depending on your
@@ -425,10 +438,19 @@ On Helm 3, CRDs are created if necessary, but are not managed along with the
 release. Releases can be deleted without affecting CRDs; CRDs are only removed
 if you delete them manually.
 
+### Sidecar Containers
+
+The chart can deploy additional containers along with the Kong and Ingress
+Controller containers, sometimes referred to as "sidecar containers".  This can
+be useful to include network proxies or logging services along with Kong.  The
+`deployment.sidecarContainers` field in values.yaml takes an array of objects
+that get appended as-is to the existing `spec.template.spec.containers` array
+in the Kong deployment resource.
+
 ### Example configurations
 
 Several example values.yaml are available in the
-[example-values](https://github.com/Kong/charts/blob/master/charts/kong/example-values/)
+[example-values](https://github.com/Kong/charts/blob/main/charts/kong/example-values/)
 directory.
 
 ## Configuration
@@ -447,8 +469,8 @@ directory.
 | migrations.preUpgrade              | Run "kong migrations up" jobs                                                         | `true`              |
 | migrations.postUpgrade             | Run "kong migrations finish" jobs                                                     | `true`              |
 | migrations.annotations             | Annotations for migration jobs                                                        | `{"sidecar.istio.io/inject": "false", "kuma.io/sidecar-injection": "disabled"}` |
-| waitImage.repository               | Image used to wait for database to become ready                                       | `busybox`           |
-| waitImage.tag                      | Tag for image used to wait for database to become ready                               | `latest`            |
+| waitImage.repository               | Image used to wait for database to become ready                                       | `bash`              |
+| waitImage.tag                      | Tag for image used to wait for database to become ready                               | `5`                 |
 | waitImage.pullPolicy               | Wait image pull policy                                                                | `IfNotPresent`      |
 | postgresql.enabled                 | Spin up a new postgres instance for Kong                                              | `false`             |
 | dblessConfig.configMap             | Name of an existing ConfigMap containing the `kong.yml` file. This must have the key `kong.yml`.| `` |
@@ -469,6 +491,7 @@ individual services: see values.yaml for their individual default values.
 * `portal`
 * `portalapi`
 * `cluster`
+* `clustertelemetry`
 * `status`
 
 `status` is intended for internal use within the cluster. Unlike other
@@ -479,7 +502,9 @@ only.
 `cluster` is used on hybrid mode control plane nodes. It does not support the
 `SVC.http.*` settings (cluster communications must be TLS-only) or the
 `SVC.ingress.*` settings (cluster communication requires TLS client
-authentication, which cannot pass through an ingress proxy).
+authentication, which cannot pass through an ingress proxy). `clustertelemetry`
+is similar, and used when Vitals is enabled on Kong Enterprise control plane
+nodes.
 
 | Parameter                          | Description                                                                           | Default             |
 | ---------------------------------- | ------------------------------------------------------------------------------------- | ------------------- |
@@ -505,7 +530,7 @@ authentication, which cannot pass through an ingress proxy).
 | SVC.externalTrafficPolicy          | k8s service's externalTrafficPolicy. Options: Cluster, Local                          |                     |
 | SVC.ingress.enabled                | Enable ingress resource creation (works with SVC.type=ClusterIP)                      | `false`             |
 | SVC.ingress.tls                    | Name of secret resource, containing TLS secret                                        |                     |
-| SVC.ingress.hosts                  | List of ingress hosts.                                                                | `[]`                |
+| SVC.ingress.hostname               | Ingress hostname                                                                      | `""`                |
 | SVC.ingress.path                   | Ingress path.                                                                         | `/`                 |
 | SVC.ingress.annotations            | Ingress annotations. See documentation for your ingress controller for details        | `{}`                |
 | SVC.annotations                    | Service annotations                                                                   | `{}`                |
@@ -548,7 +573,7 @@ section of `values.yaml` file:
 
 For a complete list of all configuration values you can set in the
 `env` section, please read the Kong Ingress Controller's
-[configuration document](https://github.com/Kong/kubernetes-ingress-controller/blob/master/docs/references/cli-arguments.md).
+[configuration document](https://github.com/Kong/kubernetes-ingress-controller/blob/main/docs/references/cli-arguments.md).
 
 ### General Parameters
 
@@ -666,12 +691,6 @@ from \<your username\> \> Edit Profile \> API Key. Use this to create registry
 secrets:
 
 ```bash
-$ kubectl create secret docker-registry kong-enterprise-k8s-docker \
-    --docker-server=kong-docker-kong-enterprise-k8s.bintray.io \
-    --docker-username=<your-bintray-username@kong> \
-    --docker-password=<your-bintray-api-key>
-secret/kong-enterprise-k8s-docker created
-
 $ kubectl create secret docker-registry kong-enterprise-edition-docker \
     --docker-server=kong-docker-kong-enterprise-edition-docker.bintray.io \
     --docker-username=<your-bintray-username@kong> \
