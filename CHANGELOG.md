@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.0
+
+### Improvements
+
+* Updated Helm chart to 1.12.
+
 ## 0.5.0
 
 ### Breaking changes
