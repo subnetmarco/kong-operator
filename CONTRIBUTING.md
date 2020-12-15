@@ -6,6 +6,13 @@ Feel free to contribute fixes or minor features, we love to receive pull request
 
 Please format your commit messages according to [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/).
 
+## Stale issue and pull request policy
+
+To ensure our backlog is organized and up to date, we will close issues and
+pull requests that have been inactive awaiting a community response for over 2
+weeks. If you wish to reopen a closed issue or PR to continue work, please
+leave a comment asking a team member to do so.
+
 ### Build, test, run the operator
 
 The [CI job](https://github.com/Kong/kong-operator/blob/main/.github/workflows/test.yaml) is a reference build/test workflow for Kong Operator.
