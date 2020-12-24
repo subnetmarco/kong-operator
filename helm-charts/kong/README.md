@@ -14,9 +14,6 @@ This chart bootstraps all the components needed to run Kong on a
 $ helm repo add kong https://charts.konghq.com
 $ helm repo update
 
-# Helm 2
-$ helm install kong/kong
-
 # Helm 3
 $ helm install kong/kong --generate-name --set ingressController.installCRDs=false
 ```
@@ -24,7 +21,7 @@ $ helm install kong/kong --generate-name --set ingressController.installCRDs=fal
 ## Table of contents
 
 - [Prerequisites](#prerequisites)
-- [Helm 2 vs Helm 3](#important-helm-2-vs-helm-3)
+- [Helm 3](#helm-3)
 - [Install](#install)
 - [Uninstall](#uninstall)
 - [Kong Enterprise](#kong-enterprise)
@@ -62,17 +59,8 @@ $ helm install kong/kong --generate-name --set ingressController.installCRDs=fal
 - PV provisioner support in the underlying infrastructure if persistence
   is needed for Kong datastore.
 
-## Important: Helm 2 vs Helm 3
+## Helm 3
 
-Custom Resource Definitions (CRDs) are handled differently in Helm 2 vs Helm 3.
-
-#### Helm 2
-
-If you want CRDs to be installed,
-make sure `ingressController.installCRDs` is set to `true` (the default value).
-Set this value to `false` to skip installing CRDs.
-
-#### Helm 3
 
 Make sure `ingressController.installCRDs` is set to `false`,
 note that the default is `true`.
@@ -93,9 +81,6 @@ To install Kong:
 ```bash
 $ helm repo add kong https://charts.konghq.com
 $ helm repo update
-
-# Helm 2
-$ helm install kong/kong
 
 # Helm 3
 $ helm install kong/kong --generate-name --set ingressController.installCRDs=false
@@ -427,12 +412,6 @@ DNS](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/)
 for more detail.
 
 ### CRDs only
-
-For Helm 2 installations, CRDs are managed as part of a release, and are
-deleted if the release is. This can cause issues for clusters with multiple
-Kong installations, as one release must remain in place for the rest to
-function. To avoid this, you can create a CRD-only release by setting
-`deployment.kong.enabled: false` and `ingressController.enabled: false`.
 
 On Helm 3, CRDs are created if necessary, but are not managed along with the
 release. Releases can be deleted without affecting CRDs; CRDs are only removed
