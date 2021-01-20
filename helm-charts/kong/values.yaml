@@ -25,6 +25,10 @@ deployment:
   #   - name: sidecar
   #     image: sidecar:latest
 
+# Override namepsace for Kong chart resources. By default, the chart creates resources in the release namespace.
+# This may not be desirable when using this chart as a dependency.
+# namespace: "example"
+
 # -----------------------------------------------------------------------------
 # Kong parameters
 # -----------------------------------------------------------------------------
@@ -56,7 +60,7 @@ image:
   tag: "2.2"
   # Kong Enterprise
   # repository: kong-docker-kong-enterprise-edition-docker.bintray.io/kong-enterprise-edition
-  # tag: "2.1.4.1-alpine"
+  # tag: "2.2.1.0-alpine"
 
   pullPolicy: IfNotPresent
   ## Optionally specify an array of imagePullSecrets.
@@ -121,6 +125,7 @@ admin:
 # Specify Kong status listener configuration
 # This listen is internal-only. It cannot be exposed through a service or ingress.
 status:
+  enabled: true
   http:
     # Enable plaintext HTTP listen for the status listen
     enabled: true
@@ -156,8 +161,6 @@ cluster:
     parameters: []
 
   type: ClusterIP
-
-  externalIPs: []
 
 # Specify Kong proxy service configuration
 proxy:
@@ -215,22 +218,17 @@ proxy:
   ingress:
     # Enable/disable exposure using ingress.
     enabled: false
-    hosts: []
-    # TLS section. Unlike other ingresses, this follows the format at
-    # https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
-    # tls:
-    # - hosts:
-    #   - 1.example.com
-    #   secretName: example1-com-tls-secret
-    # - hosts:
-    #   - 2.example.net
-    #   secretName: example2-net-tls-secret
+    # Ingress hostname
+    # TLS secret name.
+    # tls: kong-admin.example.com-tls
+    hostname:
     # Map of ingress annotations.
     annotations: {}
     # Ingress path.
     path: /
 
-  externalIPs: []
+  # Optionally specify a static load balancer IP.
+  # loadBalancerIP:
 
 # Custom Kong plugins can be loaded into Kong by mounting the plugin code
 # into the file-system of Kong container.
@@ -308,7 +306,7 @@ ingressController:
   enabled: true
   image:
     repository: kong-docker-kubernetes-ingress-controller.bintray.io/kong-ingress-controller
-    tag: "1.0"
+    tag: "1.1"
   args: []
 
   # Specify Kong Ingress Controller configuration via environment variables
@@ -369,6 +367,14 @@ ingressController:
     successThreshold: 1
     failureThreshold: 3
   resources: {}
+  # Example reasonable setting for "resources":
+  # resources:
+  #   limits:
+  #     cpu: 100m
+  #     memory: 256Mi
+  #   requests:
+  #     cpu: 50m
+  #     memory: 128Mi
 
 # -----------------------------------------------------------------------------
 # Postgres sub-chart parameters
@@ -385,7 +391,7 @@ ingressController:
 #   along-with Kong as part of a single Helm release.
 
 # PostgreSQL chart documentation:
-# https://github.com/helm/charts/blob/main/stable/postgresql/README.md
+# https://github.com/bitnami/charts/blob/master/bitnami/postgresql/README.md
 
 postgresql:
   enabled: false
@@ -425,7 +431,7 @@ resources: {}
 readinessProbe:
   httpGet:
     path: "/status"
-    port: metrics
+    port: status
     scheme: HTTP
   initialDelaySeconds: 5
   timeoutSeconds: 5
@@ -437,7 +443,7 @@ readinessProbe:
 livenessProbe:
   httpGet:
     path: "/status"
-    port: metrics
+    port: status
     scheme: HTTP
   initialDelaySeconds: 5
   timeoutSeconds: 5
@@ -480,6 +486,8 @@ deploymentAnnotations:
   traffic.sidecar.istio.io/includeInboundPorts: ""
 
 # Enable autoscaling using HorizontalPodAutoscaler
+# When configuring an HPA, you must set resource requests on all containers via
+# "resources" and, if using the controller, "ingressController.resources" in values.yaml
 autoscaling:
   enabled: false
   minReplicas: 2
@@ -635,8 +643,6 @@ manager:
     # Ingress path.
     path: /
 
-  externalIPs: []
-
 portal:
   # Enable creating a Kubernetes service for the Developer Portal
   enabled: true
@@ -678,8 +684,6 @@ portal:
     annotations: {}
     # Ingress path.
     path: /
-
-  externalIPs: []
 
 portalapi:
   # Enable creating a Kubernetes service for the Developer Portal API
@@ -723,8 +727,6 @@ portalapi:
     # Ingress path.
     path: /
 
-  externalIPs: []
-
 clustertelemetry:
   enabled: false
   # If you want to specify annotations for the cluster telemetry service, uncomment the following
@@ -739,8 +741,6 @@ clustertelemetry:
     parameters: []
 
   type: ClusterIP
-
-  externalIPs: []
 
 extraConfigMaps: []
 # extraConfigMaps:
