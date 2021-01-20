@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.7.0
+
+### Breaking changes
+
+* Chart 1.14 introduces breaking changes to proxy Ingress configuration and
+  readiness/liveness monitors. Please see [the 1.14 upgrade
+  instructions](https://github.com/Kong/charts/blob/kong-1.14.0/charts/kong/UPGRADE.md#1140)
+  for further details.
+
+### Improvements
+
+* Updated Helm chart to 1.14.
+
 ## 0.6.0
 
 ### Improvements
