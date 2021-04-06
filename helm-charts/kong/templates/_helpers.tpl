@@ -132,7 +132,7 @@ spec:
   ports:
   {{- if .http }}
   {{- if .http.enabled }}
-  - name: kong-{{ .serviceName }}
+  - name: {{ .http.servicePortName }}
     port: {{ .http.servicePort }}
     targetPort: {{ .http.containerPort }}
   {{- if (and (or (eq .type "LoadBalancer") (eq .type "NodePort")) (not (empty .http.nodePort))) }}
@@ -142,7 +142,7 @@ spec:
   {{- end }}
   {{- end }}
   {{- if .tls.enabled }}
-  - name: kong-{{ .serviceName }}-tls
+  - name: {{ .tls.servicePortName }}
     port: {{ .tls.servicePort }}
     targetPort: {{ .tls.overrideServiceTargetPort | default .tls.containerPort }}
   {{- if (and (or (eq .type "LoadBalancer") (eq .type "NodePort")) (not (empty .tls.nodePort))) }}
