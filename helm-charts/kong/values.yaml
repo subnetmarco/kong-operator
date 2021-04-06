@@ -88,6 +88,7 @@ admin:
     # Disabling this and using a TLS listen only is recommended for most configuration
     enabled: false
     servicePort: 8001
+    servicePortName: http-admin
     containerPort: 8001
     # Set a nodePort which is available if service type is NodePort
     # nodePort: 32080
@@ -99,6 +100,7 @@ admin:
     enabled: true
     servicePort: 8444
     containerPort: 8444
+    servicePortName: https-admin
     # Set a target port for the TLS port in the admin API service, useful when using TLS
     # termination on an ELB.
     # overrideServiceTargetPort: 8000
@@ -176,6 +178,7 @@ proxy:
     # Enable plaintext HTTP listen for the proxy
     enabled: true
     servicePort: 80
+    servicePortName: http-proxy
     containerPort: 8000
     # Set a nodePort which is available if service type is NodePort
     # nodePort: 32080
@@ -186,6 +189,7 @@ proxy:
     # Enable HTTPS listen for the proxy
     enabled: true
     servicePort: 443
+    servicePortName: https-proxy
     containerPort: 8443
     # Set a target port for the TLS port in proxy service, useful when using TLS
     # termination on an ELB.
