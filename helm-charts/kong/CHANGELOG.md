@@ -1,5 +1,159 @@
 # Changelog
 
+## 2.1.0
+
+### Improvements
+
+* Added support for user-defined volumes, volume mounts, and init containers.
+  ([#317](https://github.com/Kong/charts/pull/317))
+* Tolerations are now applied to migration Job Pods also.
+  ([#341](https://github.com/Kong/charts/pull/341))
+* Added support for using a DaemonSet instead of Deployment.
+  ([#347](https://github.com/Kong/charts/pull/347))
+* Updated default image versions and completed migration off Bintray
+  repositories.
+  ([#349](https://github.com/Kong/charts/pull/349))
+* PDB ignores migration Job Pods.
+  ([#352](https://github.com/Kong/charts/pull/352))
+
+### Documentation
+
+* Clarified service monitor usage information.
+  ([#345](https://github.com/Kong/charts/pull/345))
+
+## 2.0.0
+
+### Breaking changes
+
+* Helm 2 is no longer supported. You **must** [migrate your Kong chart releases
+  to Helm 3](https://helm.sh/docs/topics/v2_v3_migration/) before updating to
+  this release.
+* Deprecated [Portal auth settings](https://github.com/Kong/charts/blob/kong-1.15.0/charts/kong/UPGRADE.md#removal-of-dedicated-portal-authentication-configuration-parameters)
+  are no longer supported.
+* The deprecated [`runMigrations` setting](https://github.com/Kong/charts/blob/kong-1.15.0/charts/kong/UPGRADE.md#changes-to-migration-job-configuration)
+  is no longer supported.
+* Deprecated [admin API Service configuration](https://github.com/Kong/charts/blob/kong-1.15.0/charts/kong/UPGRADE.md#changes-to-kong-service-configuration)
+  is no longer supported.
+* Deprecated [multi-host proxy configuration](https://github.com/Kong/charts/blob/kong-1.15.0/charts/kong/UPGRADE.md#removal-of-multi-host-proxy-ingress)
+  is no longer supported.
+
+`helm upgrade` with the previous version (1.15.0) will print a warning message
+if you still use any of the removed values.yaml configuration. If you do not
+see any warnings after the upgrade completes, you are already using the modern
+equivalents of these settings and can proceed with upgrading to 2.0.0-rc1.
+
+### Improvements
+
+* Admission webhook certificates persist after their initial creation. This
+  prevents an unnecessary restart of Kong Pods on upgrades that do not actually
+  modify the deployment.
+  ([#256](https://github.com/Kong/charts/pull/256))
+* `ingressController.installCRDs` now defaults to `false`, simplifying
+  installation on Helm 3. Installs now default to using Helm 3's CRD management
+  system, and do not require changes to values or install flags to install
+  successfully.
+  ([#305](https://github.com/Kong/charts/pull/305))
+* Added support for Pod `topologySpreadConstraints`.
+  ([#308](https://github.com/Kong/charts/pull/308))
+* Kong Ingress Controller image now pulled from Docker Hub (due to Bintray being
+  discontinued). Changed the default Docker image repository for the ingress
+  controller.
+
+### Fixed
+
+* Generated admission webhook certificates now include SANs for compatibility
+  with Go 1.15 controller builds.
+  ([#312](https://github.com/Kong/charts/pull/312)).
+
+### Documentation
+
+* Clarified use of `terminationGracePeriodSeconds`.
+  ([#302](https://github.com/Kong/charts/pull/302))
+
+## 1.15.0
+
+1.15.0 is an interim release before the planned release of 2.0.0. There were
+several feature changes we wanted to release prior to the removal of deprecated
+functionality for 2.0. The original planned deprecations covered in the [1.14.0
+changelog](#1140) are still planned for 2.0.0.
+
+### Improvements
+
+* The default Kong version is now 2.3 and the default Kong Enterprise version
+  is now 2.3.2.0.
+* Added configurable `terminationGracePeriodSeconds` for the pre-stop lifecycle
+  hook.
+  ([#271](https://github.com/Kong/charts/pull/271)).
+* Initial migration database wait init containers no longer have a default
+  image configuration in values.yaml. When no image is specified, the chart
+  will use the Kong image. The standard Kong images include bash, and can run
+  the database wait script without downloading a separate image. Configuring a
+  wait image is now only necessary if you use a custom Kong image that lacks
+  bash.
+  ([#285](https://github.com/Kong/charts/pull/285)).
+* Init containers for database availability and migration completeness can now
+  be disabled. They cause compatibility issues with many service meshes.
+  ([#285](https://github.com/Kong/charts/pull/285)).
+* Removed the default migration Job annotation that disabled Kuma's mesh proxy.
+  The latest version of Kuma no longer prevents Jobs from completing.
+  ([#285](https://github.com/Kong/charts/pull/285)).
+* Services now support user-configurable labels, and the Prometheus
+  ServiceMonitor label is included on the proxy Service by default. Users that
+  disable the proxy Service and add this label to another Service to collect
+  metrics.
+  ([#290](https://github.com/Kong/charts/pull/290)).
+* Migration Jobs now allow resource quota configuration. Init containers
+  inherit their resource quotas from their associated Kong container.
+  ([#294](https://github.com/Kong/charts/pull/294)).
+
+### Fixed
+
+* The database readiness wait script ConfigMap and associated mounts are no
+  longer created if that feature is not in use.
+  ([#285](https://github.com/Kong/charts/pull/285)).
+* Removed a duplicated field from CRDs.
+  ([#281](https://github.com/Kong/charts/pull/281)).
+
+## 1.14.5
+
+### Fixed
+
+* Removed `http2` from default status listen TLS parameters. It only supports a
+  limited subset of the extra listen parameters, and does not allow `http2`.
+
+## 1.14.4
+
+### Fixed
+
+* Status listens now include parameters in the default values.yaml. The absence
+  of these defaults caused a template rendering error when the TLS listen was
+  enabled.
+
+### Documentation
+
+* Updated status listen comments to reflect TLS listen availability on Kong
+  2.1+.
+
+## 1.14.3
+
+### Fixed
+
+* Fix issues with legacy proxy Ingress object template.
+
+## 1.14.2
+
+### Fixed
+
+* Corrected invalid default value for `enterprise.smtp.smtp_auth`.
+
+## 1.14.1
+
+### Fixed
+
+* Moved several Kong container settings into the appropriate template block.
+  Previously these were rendered whether or not the Kong container was enabled,
+  which unintentionally applied them to the controller container.
+
 ## 1.14.0
 
 ### Breaking changes
