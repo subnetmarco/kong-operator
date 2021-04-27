@@ -3,30 +3,63 @@ kind: Kong
 metadata:
   name: example-kong
 spec:
-  # Default values copied from <project_dir>/helm-charts/kong/values.yaml
-
   # Default values for Kong's Helm Chart.
   # Declare variables to be passed into your templates.
   #
   # Sections:
+  # - Deployment parameters
   # - Kong parameters
   # - Ingress Controller parameters
   # - Postgres sub-chart parameters
   # - Miscellaneous parameters
   # - Kong Enterprise parameters
-
+  
+  # -----------------------------------------------------------------------------
+  # Deployment parameters
+  # -----------------------------------------------------------------------------
+  
+  deployment:
+    kong:
+      # Enable or disable Kong itself
+      # Setting this to false with ingressController.enabled=true will create a
+      # controller-only release.
+      enabled: true
+      # Use a DaemonSet controller instead of a Deployment controller
+      daemonset: false
+    ## Optionally specify any extra sidecar containers to be included in the deployment
+    ## See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#container-v1-core
+    # sidecarContainers:
+    #   - name: sidecar
+    #     image: sidecar:latest
+    # initContainers:
+    # - name: initcon
+    #   image: initcon:latest
+    # userDefinedVolumes:
+    # - name: "volumeName"
+    #   emptyDir: {}
+    # userDefinedVolumeMounts:
+    # - name: "volumeName"
+    #   mountPath: "/opt/user/dir/mount"
+  
+  # Override namepsace for Kong chart resources. By default, the chart creates resources in the release namespace.
+  # This may not be desirable when using this chart as a dependency.
+  # namespace: "example"
+  
   # -----------------------------------------------------------------------------
   # Kong parameters
   # -----------------------------------------------------------------------------
-
-  # Specify Kong configurations
-  # Kong configurations guide https://docs.konghq.com/latest/configuration
+  
+  # Specify Kong configuration
+  # This chart takes all entries defined under `.env` and transforms them into into `KONG_*`
+  # environment variables for Kong containers.
+  # Their names here should match the names used in https://github.com/Kong/kong/blob/master/kong.conf.default
+  # See https://docs.konghq.com/latest/configuration also for additional details
   # Values here take precedence over values from other sections of values.yaml,
   # e.g. setting pg_user here will override the value normally set when postgresql.enabled
   # is set below. In general, you should not set values here if they are set elsewhere.
   env:
     database: "off"
-    nginx_worker_processes: "1"
+    nginx_worker_processes: "2"
     proxy_access_log: /dev/stdout
     admin_access_log: /dev/stdout
     admin_gui_access_log: /dev/stdout
@@ -36,13 +69,15 @@ spec:
     admin_gui_error_log: /dev/stderr
     portal_api_error_log: /dev/stderr
     prefix: /kong_prefix/
-
+  
   # Specify Kong's Docker image and repository details here
   image:
     repository: kong
-    # repository: kong-docker-kong-enterprise-k8s.bintray.io/kong-enterprise-k8s
-    # repository: kong-docker-kong-enterprise-edition-docker.bintray.io/kong-enterprise-edition
-    tag: "2.0"
+    tag: "2.4"
+    # Kong Enterprise
+    # repository: kong/kong-gateway
+    # tag: "2.3.3.2-alpine"
+  
     pullPolicy: IfNotPresent
     ## Optionally specify an array of imagePullSecrets.
     ## Secrets must be manually created in the namespace.
@@ -51,7 +86,7 @@ spec:
     ##
     # pullSecrets:
     #   - myRegistrKeySecretName
-
+  
   # Specify Kong admin API service and listener configuration
   admin:
     # Enable creating a Kubernetes service for the admin API
@@ -59,11 +94,12 @@ spec:
     # Enterprise users that wish to use Kong Manager with the controller should enable this
     enabled: false
     type: NodePort
-    # If you want to specify annotations for the admin service, uncomment the following
-    # line, add additional or adjust as needed, and remove the curly braces after 'annotations:'.
+    # To specify annotations or labels for the admin service, add them to the respective
+    # "annotations" or "labels" dictionaries below.
     annotations: {}
     #  service.beta.kubernetes.io/aws-load-balancer-proxy-protocol: "*"
-
+    labels: {}
+  
     http:
       # Enable plaintext HTTP listen for the admin API
       # Disabling this and using a TLS listen only is recommended for most configuration
@@ -74,7 +110,7 @@ spec:
       # nodePort: 32080
       # Additional listen parameters, e.g. "reuseport", "backlog=16384"
       parameters: []
-
+  
     tls:
       # Enable HTTPS listen for the admin API
       enabled: true
@@ -88,7 +124,7 @@ spec:
       # Additional listen parameters, e.g. "reuseport", "backlog=16384"
       parameters:
       - http2
-
+  
     # Kong admin ingress settings. Useful if you want to expose the Admin
     # API of Kong outside the k8s cluster.
     ingress:
@@ -102,17 +138,63 @@ spec:
       annotations: {}
       # Ingress path.
       path: /
-
-  # Specify Kong proxy service and listener configuration
+  
+  # Specify Kong status listener configuration
+  # This listen is internal-only. It cannot be exposed through a service or ingress.
+  status:
+    enabled: true
+    http:
+      # Enable plaintext HTTP listen for the status listen
+      enabled: true
+      containerPort: 8100
+      parameters: []
+  
+    tls:
+      # Enable HTTPS listen for the status listen
+      # Kong versions prior to 2.1 do not support TLS status listens.
+      # This setting must remain false on those versions
+      enabled: false
+      containerPort: 8543
+      parameters: []
+  
+  # Specify Kong cluster service and listener configuration
+  #
+  # The cluster service *must* use TLS. It does not support the "http" block
+  # available on other services.
+  #
+  # The cluster service cannot be exposed through an Ingress, as it must perform
+  # TLS client validation directly and is not compatible with TLS-terminating
+  # proxies. If you need to expose it externally, you must use "type:
+  # LoadBalancer" and use a TCP-only load balancer (check your Kubernetes
+  # provider's documentation, as the configuration required for this varies).
+  cluster:
+    enabled: false
+    # To specify annotations or labels for the cluster service, add them to the respective
+    # "annotations" or "labels" dictionaries below.
+    annotations: {}
+    #  service.beta.kubernetes.io/aws-load-balancer-proxy-protocol: "*"
+    labels: {}
+  
+    tls:
+      enabled: false
+      servicePort: 8005
+      containerPort: 8005
+      parameters: []
+  
+    type: ClusterIP
+  
+  # Specify Kong proxy service configuration
   proxy:
     # Enable creating a Kubernetes service for the proxy
     enabled: true
     type: LoadBalancer
-    # If you want to specify annotations for the proxy service, uncomment the following
-    # line, add additional or adjust as needed, and remove the curly braces after 'annotations:'.
+    # To specify annotations or labels for the proxy service, add them to the respective
+    # "annotations" or "labels" dictionaries below.
     annotations: {}
     #  service.beta.kubernetes.io/aws-load-balancer-proxy-protocol: "*"
-
+    labels:
+      enable-metrics: "true"
+  
     http:
       # Enable plaintext HTTP listen for the proxy
       enabled: true
@@ -122,7 +204,7 @@ spec:
       # nodePort: 32080
       # Additional listen parameters, e.g. "reuseport", "backlog=16384"
       parameters: []
-
+  
     tls:
       # Enable HTTPS listen for the proxy
       enabled: true
@@ -136,30 +218,41 @@ spec:
       # Additional listen parameters, e.g. "reuseport", "backlog=16384"
       parameters:
       - http2
-
+  
+    # Define stream (TCP) listen
+    # To enable, remove "{}", uncomment the section below, and select your desired
+    # ports and parameters. Listens are dynamically named after their servicePort,
+    # e.g. "stream-9000" for the below.
+    stream: {}
+      #   # Set the container (internal) and service (external) ports for this listen.
+      #   # These values should normally be the same. If your environment requires they
+      #   # differ, note that Kong will match routes based on the containerPort only.
+      # - containerPort: 9000
+      #   servicePort: 9000
+      #   # Optionally set a static nodePort if the service type is NodePort
+      #   # nodePort: 32080
+      #   # Additional listen parameters, e.g. "ssl", "reuseport", "backlog=16384"
+      #   # "ssl" is required for SNI-based routes. It is not supported on versions <2.0
+      #   parameters: []
+  
     # Kong proxy ingress settings.
     # Note: You need this only if you are using another Ingress Controller
     # to expose Kong outside the k8s cluster.
     ingress:
       # Enable/disable exposure using ingress.
       enabled: false
-      hosts: []
-      # TLS section. Unlike other ingresses, this follows the format at
-      # https://kubernetes.io/docs/concepts/services-networking/ingress/#tls
-      # tls:
-      # - hosts:
-      #   - 1.example.com
-      #   secretName: example1-com-tls-secret
-      # - hosts:
-      #   - 2.example.net
-      #   secretName: example2-net-tls-secret
+      # Ingress hostname
+      # TLS secret name.
+      # tls: kong-admin.example.com-tls
+      hostname:
       # Map of ingress annotations.
       annotations: {}
       # Ingress path.
       path: /
-
-    externalIPs: []
-
+  
+    # Optionally specify a static load balancer IP.
+    # loadBalancerIP:
+  
   # Custom Kong plugins can be loaded into Kong by mounting the plugin code
   # into the file-system of Kong container.
   # The plugin code should be present in ConfigMap or Secret inside the same
@@ -189,10 +282,32 @@ spec:
   # - kong-proxy-tls
   # - kong-admin-tls
   secretVolumes: []
-
-  # Set runMigrations to run Kong migrations
-  runMigrations: true
-
+  
+  # Enable/disable migration jobs, and set annotations for them
+  migrations:
+    # Enable pre-upgrade migrations (run "kong migrations up")
+    preUpgrade: true
+    # Enable post-upgrade migrations (run "kong migrations finish")
+    postUpgrade: true
+    # Annotations to apply to migrations job pods
+    # By default, these disable service mesh sidecar injection for Istio and Kuma,
+    # as the sidecar containers do not terminate and prevent the jobs from completing
+    annotations:
+      sidecar.istio.io/inject: false
+    # Additional annotations to apply to migration jobs
+    # This is helpful in certain non-Helm installation situations such as GitOps
+    # where additional control is required around this job creation.
+    jobAnnotations: {}
+    resources: {}
+    # Example reasonable setting for "resources":
+    # resources:
+    #   limits:
+    #     cpu: 100m
+    #     memory: 256Mi
+    #   requests:
+    #     cpu: 50m
+    #     memory: 128Mi
+  
   # Kong's configuration for DB-less mode
   # Note: Use this section only if you are deploying Kong in DB-less mode
   # and not as an Ingress Controller.
@@ -210,44 +325,55 @@ spec:
         #   - name: example
         #     paths:
         #     - "/example"
-
+  
   # -----------------------------------------------------------------------------
   # Ingress Controller parameters
   # -----------------------------------------------------------------------------
-
+  
   # Kong Ingress Controller's primary purpose is to satisfy Ingress resources
   # created in k8s.  It uses CRDs for more fine grained control over routing and
   # for Kong specific configuration.
   ingressController:
     enabled: true
     image:
-      repository: kong-docker-kubernetes-ingress-controller.bintray.io/kong-ingress-controller
-      tag: 0.8.0
+      repository: kong/kubernetes-ingress-controller
+      tag: "1.2"
     args: []
-
+  
     # Specify Kong Ingress Controller configuration via environment variables
-    env: {}
-
+    env:
+      # The controller disables TLS verification by default because Kong
+      # generates self-signed certificates by default. Set this to false once you
+      # have installed CA-signed certificates.
+      kong_admin_tls_skip_verify: true
+      # If using Kong Enterprise with RBAC enabled, uncomment the section below
+      # and specify the secret/key containing your admin token.
+      # kong_admin_token:
+      #   valueFrom:
+      #     secretKeyRef:
+      #        name: CHANGEME-admin-token-secret
+      #        key: CHANGEME-admin-token-key
+  
     admissionWebhook:
       enabled: false
       failurePolicy: Fail
       port: 8080
-
+  
     ingressClass: kong
-
+  
     rbac:
       # Specifies whether RBAC resources should be created
       create: true
-
+  
     serviceAccount:
       # Specifies whether a ServiceAccount should be created
       create: true
       # The name of the ServiceAccount to use.
       # If not set and create is true, a name is generated using the fullname template
       name:
-
-    installCRDs: false
-
+      # The annotations for service account
+      annotations: {}
+  
     # general properties
     livenessProbe:
       httpGet:
@@ -270,106 +396,145 @@ spec:
       successThreshold: 1
       failureThreshold: 3
     resources: {}
-
+    # Example reasonable setting for "resources":
+    # resources:
+    #   limits:
+    #     cpu: 100m
+    #     memory: 256Mi
+    #   requests:
+    #     cpu: 50m
+    #     memory: 128Mi
+  
   # -----------------------------------------------------------------------------
   # Postgres sub-chart parameters
   # -----------------------------------------------------------------------------
-
+  
   # Kong can run without a database or use either Postgres or Cassandra
   # as a backend datatstore for it's configuration.
   # By default, this chart installs Kong without a database.
-
+  
   # If you would like to use a database, there are two options:
   # - (recommended) Deploy and maintain a database and pass the connection
   #   details to Kong via the `env` section.
   # - You can use the below `postgresql` sub-chart to deploy a database
   #   along-with Kong as part of a single Helm release.
-
+  
   # PostgreSQL chart documentation:
-  # https://github.com/helm/charts/blob/master/stable/postgresql/README.md
-
+  # https://github.com/bitnami/charts/blob/master/bitnami/postgresql/README.md
+  
   postgresql:
     enabled: false
     # postgresqlUsername: kong
     # postgresqlDatabase: kong
     # service:
     #   port: 5432
-
+  
   # -----------------------------------------------------------------------------
   # Miscellaneous parameters
   # -----------------------------------------------------------------------------
-
+  
   waitImage:
-    repository: busybox
-    tag: latest
+    # Wait for the database to come online before starting Kong or running migrations
+    # If Kong is to access the database through a service mesh that injects a sidecar to
+    # Kong's container, this must be disabled. Otherwise there'll be a deadlock:
+    # InitContainer waiting for DB access that requires the sidecar, and the sidecar
+    # waiting for InitContainers to finish.
+    enabled: true
+    # Optionally specify an image that provides bash for pre-migration database
+    # checks. If none is specified, the chart uses the Kong image. The official
+    # Kong images provide bash
+    # repository: bash
+    # tag: 5
     pullPolicy: IfNotPresent
-
+  
   # update strategy
   updateStrategy: {}
     # type: RollingUpdate
     # rollingUpdate:
     #   maxSurge: "100%"
     #   maxUnavailable: "0%"
-
+  
   # If you want to specify resources, uncomment the following
   # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
   resources: {}
     # limits:
     #  cpu: 100m
-    #  memory: 128Mi
+    #  memory: 256Mi
     # requests:
     #  cpu: 100m
-    #  memory: 128Mi
-
+    #  memory: 256Mi
+  
   # readinessProbe for Kong pods
   # If using Kong Enterprise with RBAC, you must add a Kong-Admin-Token header
   readinessProbe:
     httpGet:
       path: "/status"
-      port: metrics
+      port: status
       scheme: HTTP
     initialDelaySeconds: 5
     timeoutSeconds: 5
     periodSeconds: 10
     successThreshold: 1
     failureThreshold: 3
-
+  
   # livenessProbe for Kong pods
   livenessProbe:
     httpGet:
       path: "/status"
-      port: metrics
+      port: status
       scheme: HTTP
     initialDelaySeconds: 5
     timeoutSeconds: 5
     periodSeconds: 10
     successThreshold: 1
     failureThreshold: 3
-
+  
+  # Proxy container lifecycle hooks
+  # Ref: https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/
+  lifecycle:
+    preStop:
+      exec:
+        # Note kong quit has a default timeout of 10 seconds
+        command: ["/bin/sh", "-c", "/bin/sleep 15 && kong quit"]
+  
+  # Sets the termination grace period for pods spawned by the Kubernetes Deployment.
+  # Ref: https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#hook-handler-execution
+  terminationGracePeriodSeconds: 30
+  
   # Affinity for pod assignment
   # Ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
   # affinity: {}
-
+  
+  # Topology spread constraints for pod assignment (requires Kubernetes >= 1.19)
+  # Ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/
+  # topologySpreadConstraints: []
+  
   # Tolerations for pod assignment
   # Ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
   tolerations: []
-
+  
   # Node labels for pod assignment
   # Ref: https://kubernetes.io/docs/user-guide/node-selection/
   nodeSelector: {}
-
+  
   # Annotation to be added to Kong pods
   podAnnotations: {}
-
-  # Kong pod count
+  
+  # Labels to be added to Kong pods
+  podLabels: {}
+  
+  # Kong pod count.
+  # It has no effect when autoscaling.enabled is set to true
   replicaCount: 1
-
+  
   # Annotations to be added to Kong deployment
   deploymentAnnotations:
     kuma.io/gateway: enabled
     traffic.sidecar.istio.io/includeInboundPorts: ""
-
+  
   # Enable autoscaling using HorizontalPodAutoscaler
+  # When configuring an HPA, you must set resource requests on all containers via
+  # "resources" and, if using the controller, "ingressController.resources" in values.yaml
   autoscaling:
     enabled: false
     minReplicas: 2
@@ -384,35 +549,61 @@ spec:
           target:
             type: Utilization
             averageUtilization: 80
-
+  
   # Kong Pod Disruption Budget
   podDisruptionBudget:
     enabled: false
     maxUnavailable: "50%"
-
+  
   podSecurityPolicy:
     enabled: false
-
-
+    spec:
+      privileged: false
+      fsGroup:
+        rule: RunAsAny
+      runAsUser:
+        rule: RunAsAny
+      runAsGroup:
+        rule: RunAsAny
+      seLinux:
+        rule: RunAsAny
+      supplementalGroups:
+        rule: RunAsAny
+      volumes:
+        - 'configMap'
+        - 'secret'
+        - 'emptyDir'
+      allowPrivilegeEscalation: false
+      hostNetwork: false
+      hostIPC: false
+      hostPID: false
+      # Make the root filesystem read-only. This is not compatible with Kong Enterprise <1.5.
+      # If you use Kong Enterprise <1.5, this must be set to false.
+      readOnlyRootFilesystem: true
+  
+  
   priorityClassName: ""
-
+  
   # securityContext for Kong pods.
-  securityContext:
-    runAsUser: 1000
-
+  securityContext: {}
+  
   serviceMonitor:
     # Specifies whether ServiceMonitor for Prometheus operator should be created
+    # If you wish to gather metrics from a Kong instance with the proxy disabled (such as a hybrid control plane), see:
+    # https://github.com/Kong/charts/blob/main/charts/kong/README.md#prometheus-operator-integration
     enabled: false
     # interval: 10s
     # Specifies namespace, where ServiceMonitor should be installed
     # namespace: monitoring
     # labels:
     #   foo: bar
-
+    # targetLabels:
+    #   - foo
+  
   # -----------------------------------------------------------------------------
   # Kong Enterprise parameters
   # -----------------------------------------------------------------------------
-
+  
   # Toggle Kong Enterprise features on or off
   # RBAC and SMTP configuration have additional options that must all be set together
   # Other settings should be added to the "env" settings below
@@ -420,8 +611,9 @@ spec:
     enabled: false
     # Kong Enterprise license secret name
     # This secret must contain a single 'license' key, containing your base64-encoded license data
-    # The license secret is required for all Kong Enterprise deployments
-    license_secret: you-must-create-a-kong-license-secret
+    # The license secret is required to unlock all Enterprise features. If you omit it,
+    # Kong will run in free mode, with some Enterprise features disabled.
+    # license_secret: kong-enterprise-license
     vitals:
       enabled: true
     portal:
@@ -432,10 +624,10 @@ spec:
       # If RBAC is enabled, this Secret must contain an admin_gui_session_conf key
       # The key value must be a secret configuration, following the example at
       # https://docs.konghq.com/enterprise/latest/kong-manager/authentication/sessions
-      session_conf_secret: you-must-create-an-rbac-session-conf-secret
+      session_conf_secret: kong-session-config
       # If admin_gui_auth is not set to basic-auth, provide a secret name which
       # has an admin_gui_auth_conf key containing the plugin config JSON
-      admin_gui_auth_conf_secret: you-must-create-an-admin-gui-auth-conf-secret
+      admin_gui_auth_conf_secret: CHANGEME-admin-gui-auth-conf-secret
     # For configuring emails and SMTP, please read through:
     # https://docs.konghq.com/enterprise/latest/developer-portal/configuration/smtp
     # https://docs.konghq.com/enterprise/latest/kong-manager/networking/email
@@ -448,6 +640,8 @@ spec:
       smtp_admin_emails: none@example.com
       smtp_host: smtp.example.com
       smtp_port: 587
+      smtp_auth_type: ''
+      smtp_ssl: nil
       smtp_starttls: true
       auth:
         # If your SMTP server does not require authentication, this section can
@@ -455,17 +649,18 @@ spec:
         # string, you must create a Secret with an smtp_password key containing
         # your SMTP password and specify its name here.
         smtp_username: ''  # e.g. postmaster@example.com
-        smtp_password_secret: you-must-create-an-smtp-password
-
+        smtp_password_secret: CHANGEME-smtp-password
+  
   manager:
     # Enable creating a Kubernetes service for Kong Manager
     enabled: true
     type: NodePort
-    # If you want to specify annotations for the Manager service, uncomment the following
-    # line, add additional or adjust as needed, and remove the curly braces after 'annotations:'.
+    # To specify annotations or labels for the Manager service, add them to the respective
+    # "annotations" or "labels" dictionaries below.
     annotations: {}
     #  service.beta.kubernetes.io/aws-load-balancer-proxy-protocol: "*"
-
+    labels: {}
+  
     http:
       # Enable plaintext HTTP listen for Kong Manager
       enabled: true
@@ -475,7 +670,7 @@ spec:
       # nodePort: 32080
       # Additional listen parameters, e.g. "reuseport", "backlog=16384"
       parameters: []
-
+  
     tls:
       # Enable HTTPS listen for Kong Manager
       enabled: true
@@ -486,7 +681,7 @@ spec:
       # Additional listen parameters, e.g. "reuseport", "backlog=16384"
       parameters:
       - http2
-
+  
     ingress:
       # Enable/disable exposure using ingress.
       enabled: false
@@ -498,18 +693,17 @@ spec:
       annotations: {}
       # Ingress path.
       path: /
-
-    externalIPs: []
-
+  
   portal:
     # Enable creating a Kubernetes service for the Developer Portal
     enabled: true
     type: NodePort
-    # If you want to specify annotations for the Portal service, uncomment the following
-    # line, add additional or adjust as needed, and remove the curly braces after 'annotations:'.
+    # To specify annotations or labels for the Portal service, add them to the respective
+    # "annotations" or "labels" dictionaries below.
     annotations: {}
     #  service.beta.kubernetes.io/aws-load-balancer-proxy-protocol: "*"
-
+    labels: {}
+  
     http:
       # Enable plaintext HTTP listen for the Developer Portal
       enabled: true
@@ -519,7 +713,7 @@ spec:
       # nodePort: 32080
       # Additional listen parameters, e.g. "reuseport", "backlog=16384"
       parameters: []
-
+  
     tls:
       # Enable HTTPS listen for the Developer Portal
       enabled: true
@@ -530,7 +724,7 @@ spec:
       # Additional listen parameters, e.g. "reuseport", "backlog=16384"
       parameters:
       - http2
-
+  
     ingress:
       # Enable/disable exposure using ingress.
       enabled: false
@@ -542,18 +736,17 @@ spec:
       annotations: {}
       # Ingress path.
       path: /
-
-    externalIPs: []
-
+  
   portalapi:
     # Enable creating a Kubernetes service for the Developer Portal API
     enabled: true
     type: NodePort
-    # If you want to specify annotations for the Portal API service, uncomment the following
-    # line, add additional or adjust as needed, and remove the curly braces after 'annotations:'.
+    # To specify annotations or labels for the Portal API service, add them to the respective
+    # "annotations" or "labels" dictionaries below.
     annotations: {}
     #  service.beta.kubernetes.io/aws-load-balancer-proxy-protocol: "*"
-
+    labels: {}
+  
     http:
       # Enable plaintext HTTP listen for the Developer Portal API
       enabled: true
@@ -563,7 +756,7 @@ spec:
       # nodePort: 32080
       # Additional listen parameters, e.g. "reuseport", "backlog=16384"
       parameters: []
-
+  
     tls:
       # Enable HTTPS listen for the Developer Portal API
       enabled: true
@@ -574,7 +767,7 @@ spec:
       # Additional listen parameters, e.g. "reuseport", "backlog=16384"
       parameters:
       - http2
-
+  
     ingress:
       # Enable/disable exposure using ingress.
       enabled: false
@@ -586,5 +779,32 @@ spec:
       annotations: {}
       # Ingress path.
       path: /
-
-    externalIPs: []
+  
+  clustertelemetry:
+    enabled: false
+    # To specify annotations or labels for the cluster telemetry service, add them to the respective
+    # "annotations" or "labels" dictionaries below.
+    annotations: {}
+    #  service.beta.kubernetes.io/aws-load-balancer-proxy-protocol: "*"
+    labels: {}
+  
+    tls:
+      enabled: false
+      servicePort: 8006
+      containerPort: 8006
+      parameters: []
+  
+    type: ClusterIP
+  
+  extraConfigMaps: []
+  # extraConfigMaps:
+  # - name: my-config-map
+  #   mountPath: /mount/to/my/location
+  #   subPath: my-subpath # Optional, if you wish to mount a single key and not the entire ConfigMap
+  
+  extraSecrets: []
+  # extraSecrets:
+  # - name: my-secret
+  #   mountPath: /mount/to/my/location
+  #   subPath: my-subpath # Optional, if you wish to mount a single key and not the entire ConfigMap
+  
