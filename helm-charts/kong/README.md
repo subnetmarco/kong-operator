@@ -14,17 +14,12 @@ This chart bootstraps all the components needed to run Kong on a
 $ helm repo add kong https://charts.konghq.com
 $ helm repo update
 
-# Helm 2
-$ helm install kong/kong
-
-# Helm 3
-$ helm install kong/kong --generate-name --set ingressController.installCRDs=false
+$ helm install kong/kong --generate-name
 ```
 
 ## Table of contents
 
 - [Prerequisites](#prerequisites)
-- [Helm 2 vs Helm 3](#important-helm-2-vs-helm-3)
 - [Install](#install)
 - [Uninstall](#uninstall)
 - [Kong Enterprise](#kong-enterprise)
@@ -36,7 +31,12 @@ $ helm install kong/kong --generate-name --set ingressController.installCRDs=fal
   - [Separate admin and proxy nodes](#separate-admin-and-proxy-nodes)
   - [Standalone controller nodes](#standalone-controller-nodes)
   - [Hybrid mode](#hybrid-mode)
-  - [CRDs only](#crds-only)
+  - [CRD management](#crd-management)
+  - [InitContainers](#initContainers)
+  - [Sidecar containers](#sidecar-containers)
+  - [User Defined Volumes](#user-defined-volumes)
+  - [User Defined Volume Mounts](#user-defined-volume-mounts)
+  - [Using a DaemonSet](#using-a-daemonset)
   - [Example configurations](#example-configurations)
 - [Configuration](#configuration)
   - [Kong Parameters](#kong-parameters)
@@ -52,6 +52,7 @@ $ helm install kong/kong --generate-name --set ingressController.installCRDs=fal
   - [RBAC](#rbac)
   - [Sessions](#sessions)
   - [Email/SMTP](#emailsmtp)
+- [Prometheus Operator integration](#prometheus-operator-integration)
 - [Changelog](https://github.com/Kong/charts/blob/main/charts/kong/CHANGELOG.md)
 - [Upgrading](https://github.com/Kong/charts/blob/main/charts/kong/UPGRADE.md)
 - [Seeking help](#seeking-help)
@@ -62,30 +63,6 @@ $ helm install kong/kong --generate-name --set ingressController.installCRDs=fal
 - PV provisioner support in the underlying infrastructure if persistence
   is needed for Kong datastore.
 
-## Important: Helm 2 vs Helm 3
-
-Custom Resource Definitions (CRDs) are handled differently in Helm 2 vs Helm 3.
-
-#### Helm 2
-
-If you want CRDs to be installed,
-make sure `ingressController.installCRDs` is set to `true` (the default value).
-Set this value to `false` to skip installing CRDs.
-
-#### Helm 3
-
-Make sure `ingressController.installCRDs` is set to `false`,
-note that the default is `true`.
-You can do so either by passing in a custom `values.yaml`
-(`-f` when running helm)
-or by passing `--set ingressController.installCRDs=false`
-at the command line.
-
-**If you do not set this value to `false`, the helm chart will not install correctly.**
-
-Use helm CLI flag `--skip-crds` with `helm install` if you want to skip
-CRD creation while creating a release.
-
 ## Install
 
 To install Kong:
@@ -94,10 +71,6 @@ To install Kong:
 $ helm repo add kong https://charts.konghq.com
 $ helm repo update
 
-# Helm 2
-$ helm install kong/kong
-
-# Helm 3
 $ helm install kong/kong --generate-name --set ingressController.installCRDs=false
 ```
 
@@ -154,26 +127,13 @@ Following sections detail on various high-level architecture options available:
 
 ### Database
 
-Kong can run with or without a database (DB-less).
-By default, this chart installs Kong without a database.
+Kong can run with or without a database (DB-less). By default, this chart
+installs Kong without a database.
 
-Although Kong can run with Postgres and Cassandra, the recommended database,
-if you would like to use one, is Postgres for Kubernetes installations.
-If your use-case warrants Cassandra, you should run the Cassandra cluster
-outside of Kubernetes.
+You can set the database the `env.database` parameter. For more details, please
+read the [env](#the-env-section) section.
 
-The database to use for Kong can be controlled via the `env.database` parameter.
-For more details, please read the [env](#the-env-section) section.
-
-Furthermore, this chart allows you to bring your own database that you manage
-or spin up a new Postgres instance using the `postgres.enabled` parameter.
-
-> Cassandra deployment via a sub-chart was previously supported but
-the support has now been dropped due to stability issues.
-You can still deploy Cassandra on your own and configure Kong to use
-that via the `env.database` parameter.
-
-#### DB-less  deployment
+#### DB-less deployment
 
 When deploying Kong in DB-less mode(`env.database: "off"`)
 and without the Ingress Controller(`ingressController.enabled: false`),
@@ -183,6 +143,18 @@ The configuration can be provided using an existing ConfigMap
 `values.yaml` file for deployment itself, under the `dblessConfig.config`
 parameter. See the example configuration in the default values.yaml
 for more details.
+
+#### Using the Postgres sub-chart
+
+The chart can optionally spawn a Postgres instance using [Bitnami's Postgres
+chart](https://github.com/bitnami/charts/blob/master/bitnami/postgresql/README.md)
+as a sub-chart. Set `postgresql.enabled=true` to enable the sub-chart. Enabling
+this will auto-populate Postgres connection settings in Kong's environment.
+
+The Postgres sub-chart is best used to quickly provision temporary environments
+without installing and configuring your database separately. For longer-lived
+environments, we recommend you manage your database outside the Kong Helm
+release.
 
 ### Runtime package
 
@@ -426,17 +398,41 @@ documentation on Service
 DNS](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/)
 for more detail.
 
-### CRDs only
+### CRD management
 
-For Helm 2 installations, CRDs are managed as part of a release, and are
-deleted if the release is. This can cause issues for clusters with multiple
-Kong installations, as one release must remain in place for the rest to
-function. To avoid this, you can create a CRD-only release by setting
-`deployment.kong.enabled: false` and `ingressController.enabled: false`.
+Earlier versions of this chart (<2.0) created CRDs associated with the ingress
+controller as part of the release. This raised two challenges:
 
-On Helm 3, CRDs are created if necessary, but are not managed along with the
-release. Releases can be deleted without affecting CRDs; CRDs are only removed
-if you delete them manually.
+- Multiple release of the chart would conflict with one another, as each would
+  attempt to create its own set of CRDs.
+- Because deleting a CRD also deletes any custom resources associated with it,
+  deleting a release of the chart could destroy user configuration without
+  providing any means to restore it.
+
+Helm 3 introduced a simplified CRD management method that was safer, but
+requires some manual work when a chart added or modified CRDs: CRDs are created
+on install if they are not already present, but are not modified during
+release upgrades or deletes. Our chart release upgrade instructions call out
+when manual action is necessary to update CRDs. This CRD handling strategy is
+recommended for most users.
+
+Some users may wish to manage their CRDs automatically. If you manage your CRDs
+this way, we _strongly_ recommend that you back up all associated custom
+resources in the event you need to recover from unintended CRD deletion.
+
+While Helm 3's CRD management system is recommended, there is no simple means
+of migrating away from release-managed CRDs if you previously installed your
+release with the old system (you would need to back up your existing custom
+resources, delete your release, reinstall, and restore your custom resources
+after). As such, the chart detects if you currently use release-managed CRDs
+and continues to use the old CRD templates when using chart version 2.0+. If
+you do (your resources will have a `meta.helm.sh/release-name` annotation), we
+_strongly_ recommend that you back up all associated custom resources in the
+event you need to recover from unintended CRD deletion.
+
+### InitContainers
+
+The chart able to deploy initcontainers along with Kong. This can be very useful when require to setup additional custom initialization. The `deployment.initcontainers` field in values.yaml takes an array of objects that get appended as-is to the existing `spec.template.initContainers` array in the kong deployment resource. 
 
 ### Sidecar Containers
 
@@ -446,6 +442,21 @@ be useful to include network proxies or logging services along with Kong.  The
 `deployment.sidecarContainers` field in values.yaml takes an array of objects
 that get appended as-is to the existing `spec.template.spec.containers` array
 in the Kong deployment resource.
+
+### User Defined Volumes
+
+The chart can deploy additional volumes along with Kong. This can be useful to include additional volumes which required during iniatilization phase (InitContainer). The  `deployment.userDefinedVolumes` field in values.yaml takes an array of objects that get appended as-is to the existing `spec.template.spec.volumes` array in the kong deployment resource.
+
+### User Defined Volume Mounts
+
+The chart can mount the volumes which defined in the `user defined volume` or others. The `deployment.userDefinedVolumeMounts` field in values.yaml takes an array of object that get appended as-is to the existing `spec.template.spec.containers[].volumeMounts` and `spec.template.spec.initContainers[].volumeMounts` array in the kong deployment resource.
+
+### Using a DaemonSet
+
+Setting `deployment.daemonset: true` deploys Kong using a [DaemonSet
+controller](https://kubernetes.io/docs/concepts/workloads/controllers/daemonset/)
+instead of a Deployment controller. This runs a Kong Pod on every kubelet in
+the Kubernetes cluster.
 
 ### Example configurations
 
@@ -460,7 +471,7 @@ directory.
 | Parameter                          | Description                                                                           | Default             |
 | ---------------------------------- | ------------------------------------------------------------------------------------- | ------------------- |
 | image.repository                   | Kong image                                                                            | `kong`              |
-| image.tag                          | Kong image version                                                                    | `2.0`               |
+| image.tag                          | Kong image version                                                                    | `2.4`               |
 | image.pullPolicy                   | Image pull policy                                                                     | `IfNotPresent`      |
 | image.pullSecrets                  | Image pull secrets                                                                    | `null`              |
 | replicaCount                       | Kong instance count. It has no effect when `autoscaling.enabled` is set to true         | `1`                 |
@@ -468,10 +479,11 @@ directory.
 | env                                | Additional [Kong configurations](https://getkong.org/docs/latest/configuration/)      |                     |
 | migrations.preUpgrade              | Run "kong migrations up" jobs                                                         | `true`              |
 | migrations.postUpgrade             | Run "kong migrations finish" jobs                                                     | `true`              |
-| migrations.annotations             | Annotations for migration job pods                                                    | `{"sidecar.istio.io/inject": "false", "kuma.io/sidecar-injection": "disabled"}` |
+| migrations.annotations             | Annotations for migration job pods                                                    | `{"sidecar.istio.io/inject": "false" |
 | migrations.jobAnnotations          | Additional annotations for migration jobs                                             | `{}`                |
-| waitImage.repository               | Image used to wait for database to become ready                                       | `bash`              |
-| waitImage.tag                      | Tag for image used to wait for database to become ready                               | `5`                 |
+| waitImage.enabled                  | Spawn init containers that wait for the database before starting Kong                 | `true`              |
+| waitImage.repository               | Image used to wait for database to become ready. Uses the Kong image if none set      |                     |
+| waitImage.tag                      | Tag for image used to wait for database to become ready                               |                     |
 | waitImage.pullPolicy               | Wait image pull policy                                                                | `IfNotPresent`      |
 | postgresql.enabled                 | Spin up a new postgres instance for Kong                                              | `false`             |
 | dblessConfig.configMap             | Name of an existing ConfigMap containing the `kong.yml` file. This must have the key `kong.yml`.| `` |
@@ -535,6 +547,7 @@ nodes.
 | SVC.ingress.path                   | Ingress path.                                                                         | `/`                 |
 | SVC.ingress.annotations            | Ingress annotations. See documentation for your ingress controller for details        | `{}`                |
 | SVC.annotations                    | Service annotations                                                                   | `{}`                |
+| SVC.labels                         | Service labels                                                                        | `{}`                |
 
 #### Stream listens
 
@@ -557,11 +570,11 @@ section of `values.yaml` file:
 | Parameter                          | Description                                                                           | Default                                                                      |
 | ---------------------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
 | enabled                            | Deploy the ingress controller, rbac and crd                                           | true                                                                         |
-| image.repository                   | Docker image with the ingress controller                                              | kong-docker-kubernetes-ingress-controller.bintray.io/kong-ingress-controller |
-| image.tag                          | Version of the ingress controller                                                     | 0.9.1                                                                        |
+| image.repository                   | Docker image with the ingress controller                                              | kong/kubernetes-ingress-controller |
+| image.tag                          | Version of the ingress controller                                                     | 1.2.0 |
 | readinessProbe                     | Kong ingress controllers readiness probe                                              |                                                                              |
 | livenessProbe                      | Kong ingress controllers liveness probe                                               |                                                                              |
-| installCRDs                        | Create CRDs. **FOR HELM3, MAKE SURE THIS VALUE IS SET TO `false`.**  Regardless of value of this, Helm v3+ will install the CRDs if those are not present already. Use `--skip-crds` with `helm install` if you want to skip CRD creation.                 | true                                                                         |
+| installCRDs                        | Creates managed CRDs.                                                                 | false
 | serviceAccount.create              | Create Service Account for ingress controller                                         | true
 | serviceAccount.name                | Use existing Service Account, specify its name                                        | ""
 | serviceAccount.annotations         | Annotations for Service Account                                                       | {}
@@ -582,6 +595,10 @@ For a complete list of all configuration values you can set in the
 | ---------------------------------- | ------------------------------------------------------------------------------------- | ------------------- |
 | namespace                          | Namespace to deploy chart resources                                                   |                     |
 | deployment.kong.enabled            | Enable or disable deploying Kong                                                      | `true`              |
+| deployment.initContainers          | Create initContainers. Please go to Kubernetes doc for the spec of the initContainers |                     |
+| deployment.daemonset               | Use a DaemonSet instead of a Deployment                                               | `false`             |
+| deployment.userDefinedVolumes      | Create volumes. Please go to Kubernetes doc for the spec of the volumes               |                     |
+| deployment.userDefinedVolumeMounts | Create volumeMounts. Please go to Kubernetes doc for the spec of the volumeMounts     |                     |
 | autoscaling.enabled                | Set this to `true` to enable autoscaling                                              | `false`             |
 | autoscaling.minReplicas            | Set minimum number of replicas                                                        | `2`                 |
 | autoscaling.maxReplicas            | Set maximum number of replicas                                                        | `5`                 |
@@ -591,7 +608,9 @@ For a complete list of all configuration values you can set in the
 | readinessProbe                     | Kong readiness probe                                                                  |                     |
 | livenessProbe                      | Kong liveness probe                                                                   |                     |
 | lifecycle                          | Proxy container lifecycle hooks                                                       | see `values.yaml`   |
+| terminationGracePeriodSeconds      | Sets the [termination grace period](https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/#hook-handler-execution) for Deployment pods | 30                  |
 | affinity                           | Node/pod affinities                                                                   |                     |
+| topologySpreadConstraints          | Control how Pods are spread across cluster among failure-domains                      |                     |
 | nodeSelector                       | Node labels for pod assignment                                                        | `{}`                |
 | deploymentAnnotations              | Annotations to add to deployment                                                      |  see `values.yaml`  |
 | podAnnotations                     | Annotations to add to each pod                                                        | `{}`                |
@@ -672,9 +691,12 @@ configuration can be placed under the `.env` key.
 
 #### Kong Enterprise License
 
-All Kong Enterprise deployments require a license. If you do not have a copy
-of yours, please contact Kong Support. Once you have it, you will need to
-store it in a Secret:
+Kong Enterprise 2.3+ can run with or without a license. If you wish to run 2.3+
+without a license, you can skip this step and leave `enterprise.license_secret`
+unset. Earlier versions require a license.
+
+If you have paid for a license, but you do not have a copy of yours, please
+contact Kong Support. Once you have it, you will need to store it in a Secret:
 
 ```bash
 $ kubectl create secret generic kong-enterprise-license --from-file=license=./license.json
@@ -686,11 +708,10 @@ Kong is going to be deployed.
 
 #### Kong Enterprise Docker registry access
 
-Next, we need to setup Docker credentials in order to allow Kubernetes
-nodes to pull down Kong Enterprise Docker images, which are hosted in a private
-registry.
+Kong Enterprise versions 2.2 and earlier use a private Docker registry and
+require a pull secret. **If you use 2.3 or newer, you can skip this step.**
 
-You should received credentials to log into https://bintray.com/kong after
+You should have received credentials to log into https://bintray.com/kong after
 purchasing Kong Enterprise. After logging in, you can retrieve your API key
 from \<your username\> \> Edit Profile \> API Key. Use this to create registry
 secrets:
@@ -802,6 +823,30 @@ that these have limited functionality without sending email.
 If your SMTP server requires authentication, you must provide the `username` and `smtp_password_secret` keys under `.enterprise.smtp.auth`. `smtp_password_secret` must be a Secret containing an `smtp_password` key whose value is your SMTP password.
 
 By default, SMTP uses `AUTH` `PLAIN` when you provide credentials. If your provider requires `AUTH LOGIN`, set `smtp_auth_type: login`.
+
+## Prometheus Operator integration
+
+The chart can configure a ServiceMonitor resource to instruct the [Prometheus
+Operator](https://github.com/prometheus-operator/prometheus-operator) to
+collect metrics from Kong Pods. To enable this, set
+`serviceMonitor.enabled=true` in `values.yaml`.
+
+Kong exposes memory usage and connection counts by default. You can enable
+traffic metrics for routes and services by configuring the [Prometheus
+plugin](https://docs.konghq.com/hub/kong-inc/prometheus/).
+
+The ServiceMonitor requires an `enable-metrics: "true"` label on one of the
+chart's Services to collect data. By default, this label is set on the proxy
+Service. It should only be set on a single chart Service to avoid duplicate
+data. If you disable the proxy Service (e.g. on a hybrid control plane instance
+or Portal-only instance) and still wish to collect memory usage metrics, add
+this label to another Service, e.g. on the admin API Service:
+
+```
+admin:
+  labels:
+    enable-metrics: "true"
+```
 
 ## Seeking help
 

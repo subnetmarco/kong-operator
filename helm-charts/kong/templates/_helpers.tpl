@@ -110,6 +110,9 @@ metadata:
   {{- end }}
   labels:
     {{- .metaLabels | nindent 4 }}
+  {{- range $key, $value := .labels }}
+    {{ $key }}: {{ $value | quote }}
+  {{- end }}
 spec:
   type: {{ .type }}
   {{- if eq .type "LoadBalancer" }}
@@ -273,20 +276,12 @@ Create a single listen (IP+port+parameter combo)
 Return the local admin API URL, preferring HTTPS if available
 */}}
 {{- define "kong.adminLocalURL" -}}
-  {{- if .Values.admin.containerPort -}} {{/* TODO: Remove legacy admin behavior */}}
-    {{- if .Values.admin.useTLS -}}
-https://localhost:{{ .Values.admin.containerPort }}
-    {{- else -}}
-http://localhost:{{ .Values.admin.containerPort }}
-    {{- end -}}
-  {{- else -}}
-    {{- if .Values.admin.tls.enabled -}}
+  {{- if .Values.admin.tls.enabled -}}
 https://localhost:{{ .Values.admin.tls.containerPort }}
-    {{- else if .Values.admin.http.enabled -}}
+  {{- else if .Values.admin.http.enabled -}}
 http://localhost:{{ .Values.admin.http.containerPort }}
-    {{- else -}}
+  {{- else -}}
 http://localhost:9999 # You have no admin listens! The controller will not work unless you set .Values.admin.http.enabled=true or .Values.admin.tls.enabled=true!
-    {{- end -}}
   {{- end -}}
 {{- end -}}
 
@@ -360,15 +355,23 @@ The name of the service used for the ingress controller's validation webhook
 
 {{- end -}}
 
+{{- define "kong.userDefinedVolumes" -}}
+{{- if .Values.deployment.userDefinedVolumes }}
+{{- toYaml .Values.deployment.userDefinedVolumes }}
+{{- end }}
+{{- end -}}
+
 {{- define "kong.volumes" -}}
 - name: {{ template "kong.fullname" . }}-prefix-dir
   emptyDir: {}
 - name: {{ template "kong.fullname" . }}-tmp
   emptyDir: {}
+{{- if (and (.Values.postgresql.enabled) .Values.waitImage.enabled) }}
 - name: {{ template "kong.fullname" . }}-bash-wait-for-postgres
   configMap:
     name: {{ template "kong.fullname" . }}-bash-wait-for-postgres
     defaultMode: 0755
+{{- end }}
 {{- range .Values.plugins.configMaps }}
 - name: kong-plugin-{{ .pluginName }}
   configMap:
@@ -417,6 +420,12 @@ The name of the service used for the ingress controller's validation webhook
 - name: {{ .name }}
   secret:
     secretName: {{ .name }}
+{{- end }}
+{{- end -}}
+
+{{- define "kong.userDefinedVolumeMounts" -}}
+{{- if .Values.deployment.userDefinedVolumeMounts }}
+{{- toYaml .Values.deployment.userDefinedVolumeMounts }}
 {{- end }}
 {{- end -}}
 
@@ -487,18 +496,20 @@ The name of the service used for the ingress controller's validation webhook
 {{- end -}}
 
 {{- define "kong.wait-for-db" -}}
+{{ $sockFile := (printf "%s/stream_rpc.sock" (default "/usr/local/kong" .Values.env.prefix)) }}
 - name: wait-for-db
-{{- if .Values.image.unifiedRepoTag }}
-  image: "{{ .Values.image.unifiedRepoTag }}"
-{{- else }}
-  image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-{{- end }}
+  image: {{ include "kong.getRepoTag" .Values.image }}
   imagePullPolicy: {{ .Values.image.pullPolicy }}
   env:
   {{- include "kong.env" . | nindent 2 }}
-  command: [ "/bin/sh", "-c", "until kong start; do echo 'waiting for db'; sleep 1; done; kong stop" ]
+{{/* TODO: the rm command here is a workaround for https://github.com/Kong/charts/issues/295
+     It should be removed once that's fixed */}}
+  command: [ "/bin/sh", "-c", "until kong start; do echo 'waiting for db'; sleep 1; done; kong stop; rm -fv {{ $sockFile | squote }}"]
   volumeMounts:
   {{- include "kong.volumeMounts" . | nindent 4 }}
+  {{- include "kong.userDefinedVolumeMounts" . | nindent 4 }}
+  resources:
+  {{- toYaml .Values.resources | nindent 4 }}
 {{- end -}}
 
 {{- define "kong.controller-container" -}}
@@ -522,11 +533,7 @@ The name of the service used for the ingress controller's validation webhook
         apiVersion: v1
         fieldPath: metadata.namespace
 {{- include "kong.ingressController.env" .  | indent 2 }}
-{{- if .Values.ingressController.image.unifiedRepoTag }}
-  image: "{{ .Values.ingressController.image.unifiedRepoTag }}"
-{{- else }}
-  image: "{{ .Values.ingressController.image.repository }}:{{ .Values.ingressController.image.tag }}"
-{{- end }}
+  image: {{ include "kong.getRepoTag" .Values.ingressController.image }}
   imagePullPolicy: {{ .Values.image.pullPolicy }}
   readinessProbe:
 {{ toYaml .Values.ingressController.readinessProbe | indent 4 }}
@@ -578,27 +585,15 @@ the template that it itself is using form the above sections.
   {{- $_ := set $autoEnv "KONG_KIC" "on" -}}
 {{- end -}}
 
-{{/*
-TODO: remove legacy admin listen behavior at a future date
-*/}}
-
 {{- with .Values.admin -}}
   {{- $address := "0.0.0.0" -}}
   {{- if (not .enabled) -}}
     {{- $address = "127.0.0.1" -}}
   {{- end -}}
-  {{- if .containerPort -}} {{/* Legacy admin listener */}}
-    {{- if .useTLS -}}
-      {{- $_ := set $autoEnv "KONG_ADMIN_LISTEN" (printf "%s:%d ssl" $address (int64 .containerPort)) -}}
-    {{- else -}}
-      {{- $_ := set $autoEnv "KONG_ADMIN_LISTEN" (printf "%s:%d" $address (int64 .containerPort)) -}}
-    {{- end -}}
-  {{- else -}} {{/* Modern admin listener */}}
-    {{- $listenConfig := dict -}}
-    {{- $listenConfig := merge $listenConfig . -}}
-    {{- $_ := set $listenConfig "address" $address -}}
-    {{- $_ := set $autoEnv "KONG_ADMIN_LISTEN" (include "kong.listen" $listenConfig) -}}
-  {{- end -}}
+  {{- $listenConfig := dict -}}
+  {{- $listenConfig := merge $listenConfig . -}}
+  {{- $_ := set $listenConfig "address" $address -}}
+  {{- $_ := set $autoEnv "KONG_ADMIN_LISTEN" (include "kong.listen" $listenConfig) -}}
 {{- end -}}
 
 {{- if .Values.admin.ingress.enabled }}
@@ -645,12 +640,6 @@ TODO: remove legacy admin listen behavior at a future date
     {{- if .Values.portalapi.ingress.enabled }}
       {{- $_ := set $autoEnv "KONG_PORTAL_API_URL" (include "kong.ingress.serviceUrl" .Values.portalapi.ingress) -}}
     {{- end }}
-
-    {{- if .Values.enterprise.portal.portal_auth }} {{/* TODO: deprecated, remove in a future version */}}
-      {{- $_ := set $autoEnv "KONG_PORTAL_AUTH" .Values.enterprise.portal.portal_auth -}}
-      {{- $portalSession := include "secretkeyref" (dict "name" .Values.enterprise.portal.session_conf_secret "key" "portal_session_conf") -}}
-      {{- $_ := set $autoEnv "KONG_PORTAL_SESSION_CONF" $portalSession -}}
-    {{- end }}
   {{- end }}
 
   {{- if .Values.enterprise.rbac.enabled }}
@@ -687,8 +676,10 @@ TODO: remove legacy admin listen behavior at a future date
     {{- $_ := set $autoEnv "KONG_SMTP_MOCK" "on" -}}
   {{- end }}
 
-  {{- $lic := include "secretkeyref" (dict "name" .Values.enterprise.license_secret "key" "license") -}}
-  {{- $_ := set $autoEnv "KONG_LICENSE_DATA" $lic -}}
+  {{- if .Values.enterprise.license_secret -}}
+    {{- $lic := include "secretkeyref" (dict "name" .Values.enterprise.license_secret "key" "license") -}}
+    {{- $_ := set $autoEnv "KONG_LICENSE_DATA" $lic -}}
+  {{- end }}
 
 {{- end }} {{/* End of the Enterprise settings block */}}
 
@@ -697,7 +688,7 @@ TODO: remove legacy admin listen behavior at a future date
   {{- $_ := set $autoEnv "KONG_PG_PORT" .Values.postgresql.service.port -}}
   {{- $pgPassword := include "secretkeyref" (dict "name" (include "kong.postgresql.fullname" .) "key" "postgresql-password") -}}
   {{- $_ := set $autoEnv "KONG_PG_PASSWORD" $pgPassword -}}
-{{- else if eq .Values.env.database "postgres" }}
+{{- else if .Values.postgresql.enabled }}
   {{- $_ := set $autoEnv "KONG_PG_PORT" "5432" }}
 {{- end }}
 
@@ -759,10 +750,10 @@ Environment variables are sorted alphabetically
 
 {{- define "kong.wait-for-postgres" -}}
 - name: wait-for-postgres
-{{- if .Values.waitImage.unifiedRepoTag }}
-  image: "{{ .Values.waitImage.unifiedRepoTag }}"
-{{- else }}
-  image: "{{ .Values.waitImage.repository }}:{{ .Values.waitImage.tag }}"
+{{- if (or .Values.waitImage.unifiedRepoTag .Values.waitImage.repository) }}
+  image: {{ include "kong.getRepoTag" .Values.waitImage }}
+{{- else }} {{/* default to the Kong image */}}
+  image: {{ include "kong.getRepoTag" .Values.image }}
 {{- end }}
   imagePullPolicy: {{ .Values.waitImage.pullPolicy }}
   env:
@@ -771,6 +762,8 @@ Environment variables are sorted alphabetically
   volumeMounts:
   - name: {{ template "kong.fullname" . }}-bash-wait-for-postgres
     mountPath: /wait_postgres
+  resources:
+  {{- toYaml .Values.migrations.resources | nindent 4 }}
 {{- end -}}
 
 {{- define "kong.deprecation-warnings" -}}
@@ -781,4 +774,12 @@ Environment variables are sorted alphabetically
   {{- end -}}
   {{- $warningString := ($warnings | join "") -}}
   {{- $warningString -}}
+{{- end -}}
+
+{{- define "kong.getRepoTag" -}}
+{{- if .unifiedRepoTag }}
+{{- .unifiedRepoTag }}
+{{- else if .repository }}
+{{- .repository }}:{{ .tag }}
+{{- end -}}
 {{- end -}}
