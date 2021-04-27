@@ -26,7 +26,8 @@ _For maintainers only_. These instructions require certain privileges (pushing t
 1. Ensure that `HEAD` of `main` defines the release candidate of the operator:
     - set the right version in `build/Dockerfile`,
     - update the Helm chart vendored in this repo (in a clean working copy, run `./hack/update-kong-chart.sh kong-vA.B.C` where `kong-vA.B.C` is an existing tag in the charts repository)
-    - ensure that `deploy/` manifests point to the new (nonexistent yet) operator image tag.
+    - update the  `deploy/operator/deployment.yaml` manifest to point to the new (nonexistent yet) operator image tag.
+    - update the `deploy/crds/charts_v1alpha1_kong_cr.yaml` to the latest default values.yaml.
 1. Define an OperatorHub release spec:
     - Create `/olm/X.Y.Z/` with the CSV and CRD manifests, similarly to [#37](https://github.com/Kong/kong-operator/pull/37) and [#39](https://github.com/Kong/kong-operator/pull/39). Pay particular attention to the following:
        - Always define [`skipRange`](https://docs.openshift.com/container-platform/4.2/operators/understanding_olm/olm-understanding-olm.html#olm-upgrades-replacing-multiple_olm-understanding-olm) to specify a range of versions which support a direct update to the version you're releasing,

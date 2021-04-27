@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.8.0
+
+### Breaking changes
+
+* Chart 2.1 includes 2.0 changes. 2.0 ends support for Helm 2 and removes
+  support for all deprecated configuration in 1.14. Please review the [2.0
+  upgrade guide for details](https://github.com/Kong/charts/blob/kong-2.1.0/charts/kong/UPGRADE.md#200).
+* Bintray, the Docker registry previously used for several Kong images, is
+  discontinuing service. Affected images have moved to Docker Hub. The latest
+  defaults reflect this, but existing your existing Kong custom resources may
+  still reference the old repositories. Review your CRs to see if they contain
+  `bintray.io`, and if so, replace those repositories with the repositories in
+  the [2.1 values.yaml](https://github.com/Kong/charts/blob/kong-2.1.0/charts/kong/values.yaml).
+
+### Improvements
+
+* Updated Helm chart to 2.1.
+* Updated existing OLM CSVs to use the Docker Hub repo for the operator image.
+
 ## 0.7.0
 
 ### Breaking changes
