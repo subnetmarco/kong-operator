@@ -1,5 +1,5 @@
 ---
 - version: v1alpha1
-  group: charts.helm.k8s.io
+  group: charts.konghq.com
   kind: Kong
   chart: helm-charts/kong

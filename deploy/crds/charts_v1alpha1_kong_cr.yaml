@@ -1,4 +1,4 @@
-apiVersion: charts.helm.k8s.io/v1alpha1
+apiVersion: charts.konghq.com/v1alpha1
 kind: Kong
 metadata:
   name: example-kong
@@ -24,8 +24,13 @@ spec:
       # Setting this to false with ingressController.enabled=true will create a
       # controller-only release.
       enabled: true
-      # Use a DaemonSet controller instead of a Deployment controller
-      daemonset: false
+    ## Specify the service account to create and to be assigned to the deployment / daemonset and for th migrations
+    serviceAccount:
+      create: true
+    ## Optionally specify the name of the service account to create and the annotations to add.
+    #  name:
+    #  annotations: {}
+  
     ## Optionally specify any extra sidecar containers to be included in the deployment
     ## See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#container-v1-core
     # sidecarContainers:
@@ -34,12 +39,22 @@ spec:
     # initContainers:
     # - name: initcon
     #   image: initcon:latest
+    # hostAliases:
+    # - ip: "127.0.0.1"
+    #   hostnames:
+    #   - "foo.local"
+    #   - "bar.local"
     # userDefinedVolumes:
     # - name: "volumeName"
     #   emptyDir: {}
     # userDefinedVolumeMounts:
     # - name: "volumeName"
     #   mountPath: "/opt/user/dir/mount"
+    test:
+      # Enable creation of test resources for use with "helm test"
+      enabled: false
+    # Use a DaemonSet controller instead of a Deployment controller
+    daemonset: false
   
   # Override namepsace for Kong chart resources. By default, the chart creates resources in the release namespace.
   # This may not be desirable when using this chart as a dependency.
@@ -70,13 +85,16 @@ spec:
     portal_api_error_log: /dev/stderr
     prefix: /kong_prefix/
   
+  # This section can be used to configure some extra labels that will be added to each Kubernetes object generated.
+  extraLabels: {}
+  
   # Specify Kong's Docker image and repository details here
   image:
     repository: kong
-    tag: "2.4"
+    tag: "2.5"
     # Kong Enterprise
     # repository: kong/kong-gateway
-    # tag: "2.3.3.2-alpine"
+    # tag: "2.5.0.0-alpine"
   
     pullPolicy: IfNotPresent
     ## Optionally specify an array of imagePullSecrets.
@@ -130,6 +148,7 @@ spec:
     ingress:
       # Enable/disable exposure using ingress.
       enabled: false
+      ingressClassName:
       # TLS secret name.
       # tls: kong-admin.example.com-tls
       # Ingress hostname
@@ -191,7 +210,12 @@ spec:
     # To specify annotations or labels for the proxy service, add them to the respective
     # "annotations" or "labels" dictionaries below.
     annotations: {}
-    #  service.beta.kubernetes.io/aws-load-balancer-proxy-protocol: "*"
+    # If terminating TLS at the ELB, the following annotations can be used
+    # "service.beta.kubernetes.io/aws-load-balancer-backend-protocol": "*",
+    # "service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled": "true",
+    # "service.beta.kubernetes.io/aws-load-balancer-ssl-cert": "arn:aws:acm:REGION:ACCOUNT:certificate/XXXXXX-XXXXXXX-XXXXXXX-XXXXXXXX",
+    # "service.beta.kubernetes.io/aws-load-balancer-ssl-ports": "kong-proxy-tls",
+    # "service.beta.kubernetes.io/aws-load-balancer-type": "elb"
     labels:
       enable-metrics: "true"
   
@@ -210,8 +234,7 @@ spec:
       enabled: true
       servicePort: 443
       containerPort: 8443
-      # Set a target port for the TLS port in proxy service, useful when using TLS
-      # termination on an ELB.
+      # Set a target port for the TLS port in proxy service
       # overrideServiceTargetPort: 8000
       # Set a nodePort which is available if service type is NodePort
       # nodePort: 32443
@@ -223,12 +246,17 @@ spec:
     # To enable, remove "{}", uncomment the section below, and select your desired
     # ports and parameters. Listens are dynamically named after their servicePort,
     # e.g. "stream-9000" for the below.
+    # Note: although you can select the protocol here, you cannot set UDP if you
+    # use a LoadBalancer Service due to limitations in current Kubernetes versions.
+    # To proxy both TCP and UDP with LoadBalancers, you must enable the udpProxy Service
+    # in the next section and place all UDP stream listen configuration under it.
     stream: {}
       #   # Set the container (internal) and service (external) ports for this listen.
       #   # These values should normally be the same. If your environment requires they
       #   # differ, note that Kong will match routes based on the containerPort only.
       # - containerPort: 9000
       #   servicePort: 9000
+      #   protocol: TCP
       #   # Optionally set a static nodePort if the service type is NodePort
       #   # nodePort: 32080
       #   # Additional listen parameters, e.g. "ssl", "reuseport", "backlog=16384"
@@ -241,6 +269,7 @@ spec:
     ingress:
       # Enable/disable exposure using ingress.
       enabled: false
+      ingressClassName:
       # Ingress hostname
       # TLS secret name.
       # tls: kong-admin.example.com-tls
@@ -252,6 +281,40 @@ spec:
   
     # Optionally specify a static load balancer IP.
     # loadBalancerIP:
+  
+  # Specify Kong UDP proxy service configuration
+  # Currently, LoadBalancer type Services are generally limited to a single transport protocol
+  # Multi-protocol Services are an alpha feature as of Kubernetes 1.20:
+  # https://kubernetes.io/docs/concepts/services-networking/service/#load-balancers-with-mixed-protocol-types
+  # You should enable this Service if you proxy UDP traffic, and configure UDP stream listens under it
+  udpProxy:
+    # Enable creating a Kubernetes service for UDP proxying
+    enabled: false
+    type: LoadBalancer
+    # To specify annotations or labels for the proxy service, add them to the respective
+    # "annotations" or "labels" dictionaries below.
+    annotations: {}
+    #  service.beta.kubernetes.io/aws-load-balancer-proxy-protocol: "*"
+    labels: {}
+    # Optionally specify a static load balancer IP.
+    # loadBalancerIP:
+  
+    # Define stream (UDP) listen
+    # To enable, remove "{}", uncomment the section below, and select your desired
+    # ports and parameters. Listens are dynamically named after their servicePort,
+    # e.g. "stream-9000" for the below.
+    stream: {}
+      #   # Set the container (internal) and service (external) ports for this listen.
+      #   # These values should normally be the same. If your environment requires they
+      #   # differ, note that Kong will match routes based on the containerPort only.
+      # - containerPort: 9000
+      #   servicePort: 9000
+      #   protocol: UDP
+      #   # Optionally set a static nodePort if the service type is NodePort
+      #   # nodePort: 32080
+      #   # Additional listen parameters, e.g. "ssl", "reuseport", "backlog=16384"
+      #   # "ssl" is required for SNI-based routes. It is not supported on versions <2.0
+      #   parameters: []
   
   # Custom Kong plugins can be loaded into Kong by mounting the plugin code
   # into the file-system of Kong container.
@@ -298,6 +361,8 @@ spec:
     # This is helpful in certain non-Helm installation situations such as GitOps
     # where additional control is required around this job creation.
     jobAnnotations: {}
+    # Optionally set a backoffLimit. If none is set, Jobs will use the cluster default
+    backoffLimit:
     resources: {}
     # Example reasonable setting for "resources":
     # resources:
@@ -315,7 +380,7 @@ spec:
     # Either Kong's configuration is managed from an existing ConfigMap (with Key: kong.yml)
     configMap: ""
     # Or the configuration is passed in full-text below
-    config:
+    config: |
       _format_version: "1.1"
       services:
         # Example configuration
@@ -337,8 +402,23 @@ spec:
     enabled: true
     image:
       repository: kong/kubernetes-ingress-controller
-      tag: "1.2"
+      tag: "2.0"
+      # Optionally set a semantic version for version-gated features. This can normally
+      # be left unset. You only need to set this if your tag is not a semver string,
+      # such as when you are using a "next" tag. Set this to the effective semantic
+      # version of your tag: for example if using a "next" image for an unreleased 3.1.0
+      # version, set this to "3.1.0".
+      effectiveSemver:
     args: []
+  
+    # Specify individual namespaces to watch for ingress configuration. By default,
+    # when no namespaces are set, the controller watches all namespaces and uses a
+    # ClusterRole to grant access to Kubernetes resources. When you list specific
+    # namespaces, the controller will watch those namespaces only and will create
+    # namespaced-scoped Roles for each of them. Note that watching specific namespaces
+    # disables KongClusterPlugin usage, as KongClusterPlugins only exist as cluster resources.
+    # Requires controller 2.0.0 or newer.
+    watchNamespaces: []
   
     # Specify Kong Ingress Controller configuration via environment variables
     env:
@@ -358,21 +438,22 @@ spec:
       enabled: false
       failurePolicy: Fail
       port: 8080
+      certificate:
+        provided: false
+      # Specifiy the secretName when the certificate is provided via a TLS secret
+      # secretName: ""
+      # Specifiy the CA bundle of the provided certificate.
+      # This is a PEM encoded CA bundle which will be used to validate the webhook certificate. If unspecified, system trust roots on the apiserver are used.
+      # caBundle:
+      #   | Add the CA bundle content here.
   
     ingressClass: kong
+    # annotations for IngressClass resource (Kubernetes 1.18+)
+    ingressClassAnnotations: {}
   
     rbac:
       # Specifies whether RBAC resources should be created
       create: true
-  
-    serviceAccount:
-      # Specifies whether a ServiceAccount should be created
-      create: true
-      # The name of the ServiceAccount to use.
-      # If not set and create is true, a name is generated using the fullname template
-      name:
-      # The annotations for service account
-      annotations: {}
   
     # general properties
     livenessProbe:
@@ -465,7 +546,6 @@ spec:
     #  memory: 256Mi
   
   # readinessProbe for Kong pods
-  # If using Kong Enterprise with RBAC, you must add a Kong-Admin-Token header
   readinessProbe:
     httpGet:
       path: "/status"
@@ -553,7 +633,9 @@ spec:
   # Kong Pod Disruption Budget
   podDisruptionBudget:
     enabled: false
-    maxUnavailable: "50%"
+    # Uncomment only one of the following when enabled is set to true
+    # maxUnavailable: "50%"
+    # minUnavailable: "50%"
   
   podSecurityPolicy:
     enabled: false
@@ -587,6 +669,23 @@ spec:
   # securityContext for Kong pods.
   securityContext: {}
   
+  # securityContext for containers.
+  containerSecurityContext: {}
+  
+  ## Optional DNS configuration for Kong pods
+  # dnsPolicy: ClusterFirst
+  # dnsConfig:
+  #   nameservers:
+  #   - "10.100.0.10"
+  #   options:
+  #   - name: ndots
+  #     value: "5"
+  #   searches:
+  #   - default.svc.cluster.local
+  #   - svc.cluster.local
+  #   - cluster.local
+  #   - us-east-1.compute.internal
+  
   serviceMonitor:
     # Specifies whether ServiceMonitor for Prometheus operator should be created
     # If you wish to gather metrics from a Kong instance with the proxy disabled (such as a hybrid control plane), see:
@@ -599,6 +698,9 @@ spec:
     #   foo: bar
     # targetLabels:
     #   - foo
+  
+    # honorLabels: false
+    # metricRelabelings: []
   
   # -----------------------------------------------------------------------------
   # Kong Enterprise parameters
@@ -685,6 +787,7 @@ spec:
     ingress:
       # Enable/disable exposure using ingress.
       enabled: false
+      ingressClassName:
       # TLS secret name.
       # tls: kong-proxy.example.com-tls
       # Ingress hostname
@@ -728,6 +831,7 @@ spec:
     ingress:
       # Enable/disable exposure using ingress.
       enabled: false
+      ingressClassName:
       # TLS secret name.
       # tls: kong-proxy.example.com-tls
       # Ingress hostname
@@ -771,6 +875,7 @@ spec:
     ingress:
       # Enable/disable exposure using ingress.
       enabled: false
+      ingressClassName:
       # TLS secret name.
       # tls: kong-proxy.example.com-tls
       # Ingress hostname
@@ -807,4 +912,3 @@ spec:
   # - name: my-secret
   #   mountPath: /mount/to/my/location
   #   subPath: my-subpath # Optional, if you wish to mount a single key and not the entire ConfigMap
-  

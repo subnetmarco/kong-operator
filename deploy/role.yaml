@@ -70,7 +70,7 @@ rules:
   verbs:
   - '*'
 - apiGroups:
-  - charts.helm.k8s.io
+  - charts.konghq.com
   resources:
   - '*'
   verbs:

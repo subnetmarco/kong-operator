@@ -25,7 +25,7 @@ With Kong Operator running in your cluster, you can spin up multiple instances o
 1. Deploy a Kong Ingress Controller with `example-ingress-class` Ingress class (see [_Configuration_ section][section-configuration] for available options):
     ```
     kubectl create -f - <<EOF
-    apiVersion: charts.helm.k8s.io/v1alpha1
+    apiVersion: charts.konghq.com/v1alpha1
     kind: Kong
     metadata:
       name: example-kong

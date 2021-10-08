@@ -1,22 +1,55 @@
-apiVersion: apiextensions.k8s.io/v1beta1
+apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: kongs.charts.helm.k8s.io
+  name: kongs.charts.konghq.com
 spec:
-  group: charts.helm.k8s.io
+  conversion:
+    strategy: None
+  group: charts.konghq.com
   names:
     kind: Kong
     listKind: KongList
     plural: kongs
     singular: kong
+  preserveUnknownFields: false
   scope: Namespaced
-  subresources:
-    status: {}
-  validation:
-    openAPIV3Schema:
-      type: object
-      x-kubernetes-preserve-unknown-fields: true
   versions:
   - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        type: object
+        x-kubernetes-preserve-unknown-fields: true
     served: true
     storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: Kong
+    listKind: KongList
+    plural: kongs
+    singular: kong
+  conditions:
+  - lastTransitionTime: "2021-10-08T18:02:00Z"
+    message: 'spec.preserveUnknownFields: Invalid value: true: must be false'
+    reason: Violations
+    status: "True"
+    type: NonStructuralSchema
+  - lastTransitionTime: "2021-10-08T18:02:01Z"
+    message: no conflicts found
+    reason: NoConflicts
+    status: "True"
+    type: NamesAccepted
+  - lastTransitionTime: "2021-10-08T18:02:01Z"
+    message: the initial names have been accepted
+    reason: InitialNamesAccepted
+    status: "True"
+    type: Established
+  - lastTransitionTime: "2021-10-08T18:02:01Z"
+    message: protected groups must have approval annotation "api-approved.kubernetes.io",
+      see https://github.com/kubernetes/enhancements/pull/1111
+    reason: MissingAnnotation
+    status: "False"
+    type: KubernetesAPIApprovalPolicyConformant
+  storedVersions:
+  - v1alpha1
