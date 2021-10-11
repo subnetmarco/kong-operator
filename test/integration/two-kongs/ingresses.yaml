@@ -1,29 +1,33 @@
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: demo1
-  annotations:
-    kubernetes.io/ingress.class: kong1
 spec:
+  ingressClassName: kong1
   rules:
   - http:
       paths:
       - path: /via-kong1
+        pathType: ImplementationSpecific
         backend:
-          serviceName: echo
-          servicePort: 8080
+          service:
+            name: echo
+            port:
+              number: 8080
 ---
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: demo2
-  annotations:
-    kubernetes.io/ingress.class: kong2
 spec:
+  ingressClassName: kong2
   rules:
   - http:
       paths:
       - path: /via-kong2
+        pathType: ImplementationSpecific
         backend:
-          serviceName: echo
-          servicePort: 8080
+          service:
+            name: echo
+            port:
+              number: 8080
