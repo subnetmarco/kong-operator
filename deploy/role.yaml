@@ -10,6 +10,13 @@ rules:
   - ingresses
   verbs:
   - '*'
+- apiGroups:
+  - "networking.k8s.io"
+  resources:
+  - ingresses
+  - ingressclasses
+  verbs:
+  - '*'
   # To create service account for Kong when using Kong as an Ingress Controller
   # and its associated roles and bindings
 - apiGroups:
