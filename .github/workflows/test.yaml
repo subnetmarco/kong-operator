@@ -50,7 +50,7 @@ jobs:
 
     - name: 'Arrange: Set up microk8s'
       run: |
-        sudo snap install microk8s --channel 1.18/stable --classic
+        sudo snap install microk8s --channel 1.22/stable --classic
         for addon in dns rbac registry
         do
           sudo microk8s enable $addon
