@@ -58,7 +58,7 @@ jobs:
         mkdir -p ~/.kube
         sudo chown $USER -R ~/.kube
         sudo microk8s.config > ~/.kube/config
-        sudo curl -L https://storage.googleapis.com/kubernetes-release/release/v1.18.4/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl
+        sudo curl -L https://storage.googleapis.com/kubernetes-release/release/v1.22.2/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl
         kubectl wait --for=condition=Available deploy -n container-registry registry --timeout=120s
 
     - uses: actions/download-artifact@v2
