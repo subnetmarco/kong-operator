@@ -100,10 +100,6 @@ jobs:
         wait_for 'kubectl get deploy kong2-kong -o name' ".+" 30
         kubectl wait --for=condition=Available deploy kong2-kong --timeout=120s
 
-        kubectl wait --for=condition=Available deploy echo --timeout=120s
-        wait_for 'kubectl get ingress demo1 -o jsonpath={.status.loadBalancer.ingress}' ".+" 120
-        wait_for 'kubectl get ingress demo2 -o jsonpath={.status.loadBalancer.ingress}' ".+" 120
-
     - name: 'Assert: Validate Ingress'
       run: |
         set -x
@@ -111,8 +107,8 @@ jobs:
         PROXY1_IP=$(kubectl get service kong1-kong-proxy -o jsonpath={.spec.clusterIP})
         PROXY2_IP=$(kubectl get service kong2-kong-proxy -o jsonpath={.spec.clusterIP})
 
-        [ "$(curl -sw '%{http_code}' -o /dev/null http://$PROXY1_IP/via-kong1/)" == 200 ]
-        [ "$(curl -sw '%{http_code}' -o /dev/null http://$PROXY2_IP/via-kong2/)" == 200 ]
+        [ "$(curl --retry-all-errors --retry 20 -sw '%{http_code}' -o /dev/null http://$PROXY1_IP/via-kong1/)" == 200 ]
+        [ "$(curl --retry-all-errors --retry 20 -sw '%{http_code}' -o /dev/null http://$PROXY2_IP/via-kong2/)" == 200 ]
 
         [ "$(curl -sw '%{http_code}' -o /dev/null http://$PROXY1_IP/via-kong2/)" == 404 ]
         [ "$(curl -sw '%{http_code}' -o /dev/null http://$PROXY2_IP/via-kong1/)" == 404 ]
