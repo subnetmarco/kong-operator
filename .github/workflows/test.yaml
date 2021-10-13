@@ -109,8 +109,8 @@ jobs:
         PROXY1_IP=$(kubectl get service kong1-kong-proxy -o jsonpath={.spec.clusterIP})
         PROXY2_IP=$(kubectl get service kong2-kong-proxy -o jsonpath={.spec.clusterIP})
 
-        wait_for "$(curl -sw '%{http_code}' -o /dev/null http://$PROXY1_IP/via-kong1/" "200" 120
-        wait_for "$(curl -sw '%{http_code}' -o /dev/null http://$PROXY2_IP/via-kong2/" "200" 120
+        wait_for "curl -sw '%{http_code}' -o /dev/null http://$PROXY1_IP/via-kong1/" "200" 120
+        wait_for "curl -sw '%{http_code}' -o /dev/null http://$PROXY2_IP/via-kong2/" "200" 120
 
         wait_for "curl -sw '%{http_code}' -o /dev/null http://$PROXY1_IP/via-kong2/" "404" 30
         wait_for "curl -sw '%{http_code}' -o /dev/null http://$PROXY2_IP/via-kong1/" "404" 30
