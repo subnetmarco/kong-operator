@@ -175,8 +175,8 @@ spec:
   - name: Helm Chart Source
     url: https://github.com/kong/kong-operator/tree/v0.9.0/helm-charts/kong/
   maintainers:
-  - email: harry@konghq.com
-    name: Harry
+  - email: shane.utt@konghq.com
+    name: Shane
   - email: michal.flendrich@konghq.com
     name: Michal
   - email: traines@konghq.com
