@@ -105,6 +105,7 @@ jobs:
     - name: 'Assert: Validate Ingress'
       run: |
         set -x
+        . test/integration/helpers.sh
 
         PROXY1_IP=$(kubectl get service kong1-kong-proxy -o jsonpath={.spec.clusterIP})
         PROXY2_IP=$(kubectl get service kong2-kong-proxy -o jsonpath={.spec.clusterIP})
