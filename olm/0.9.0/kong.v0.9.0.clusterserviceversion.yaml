@@ -10,7 +10,7 @@ metadata:
     createdAt: '2020-08-05T16:07:00Z'
     description: The world’s most popular open source API gateway. Built for multi-cloud and hybrid, optimized for microservices and distributed architectures.
     repository: https://github.com/kong/kong-operator
-    support: Harry Bagdi
+    support: Kong Kubernetes Team
   name: kong.v0.9.0
   namespace: placeholder
 spec:
