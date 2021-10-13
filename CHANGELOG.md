@@ -46,17 +46,26 @@ these steps on Kubernetes 1.21 or older. To migrate your configuration:
 2. Using [jq](https://stedolan.github.io/jq/), create new CRs from your
    existing CRs:
    ```
-   kubectl get kongs.charts.helm.k8s.io -o json | jq ".items[] | del(.metadata.uid, .metadata.creationTimestamp, .metadata.generation, .metadata.resourceVersion) | .apiVersion=\"charts.konghq.com/v1alpha1\"" | kubectl create -f -
+   kubectl get kongs.charts.helm.k8s.io --all-namespaces -o json | jq ".items[] | del(.metadata.uid, .metadata.creationTimestamp, .metadata.generation, .metadata.resourceVersion) | .apiVersion=\"charts.konghq.com/v1alpha1\"" | kubectl create -f -
    ```
 3. Plan an outage window where you will upgrade to Kubernetes 1.22 and install
    the new operator. Because you will uninstall previous versions of the
    operator, there will be a period when your Kong instances will not be
    available.
-4. Begin your outage window. [Uninstall the Kong operator](https://olm.operatorframework.io/docs/tasks/uninstall-operator/)
-   and run `kubectl delete crds kongs.charts.helm.k8s.io`. This will _stop
-   currently running Kong instances_.
-5. Install Kong operator 0.9.0. Check the status of your Kong instances. 0.9.0
-   should detect the new CRs and start Kong instances automatically.
+4. Begin your outage window. Delete existing Kong instances and remove the
+   operator CRD:
+   ```
+   kubectl delete kongs --all-namespaces --all
+   ```
+   This will _stop all running Kong instances_.
+5. [Uninstall the Kong operator](https://olm.operatorframework.io/docs/tasks/uninstall-operator/)
+   and run `kubectl delete crds kongs.charts.helm.k8s.io` to remove the old
+   CRD.
+5. Install Kong operator 0.9.0 by creating a [new subscription](https://olm.operatorframework.io/docs/getting-started/#installing-an-operator-using-olm)
+   with `startingCSV: kong.v0.9.0`.
+6. Check the status of your Kong instances with `kubectl get deploy` in
+   namespaces you've installed Kong. 0.9.0 should detect the new CRs and start
+   Kong instances automatically.
 
 ### Improvements
 
