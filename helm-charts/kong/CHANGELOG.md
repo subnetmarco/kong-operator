@@ -1,5 +1,141 @@
 # Changelog
 
+## 2.4.0
+
+* KIC now defaults to version 2.0. If you use a database, you must first
+  perform a temporary intermediate upgrade to disable KIC before upgrading it
+  to 2.0 and re-enabling it. See the [upgrade guide](https://github.com/Kong/charts/blob/main/charts/kong/UPGRADE.md#disable-ingress-controller-prior-to-2x-upgrade-when-using-postgresql)
+  for detailed instructions.
+* ServiceAccount are now always created by default unless explicitly disabled.
+  ServiceAccount customization has [moved under the `deployment` section of
+  configuration](https://github.com/Kong/charts/blob/main/charts/kong/UPGRADE.md#changed-serviceaccount-configuration-location)
+  to reflect this. This accomodates configurations that need a ServiceAccount
+  but that do not use the ingress controller.
+  ([#455](https://github.com/Kong/charts/pull/455))
+
+### Breaking Changes
+
+### Improvements
+
+* Migration jobs support a configurable backoffLimit.
+  ([#442](https://github.com/Kong/charts/pull/442))
+* Generated Ingresses now use `networking.k8s.io/v1` when available.
+  ([#446](https://github.com/Kong/charts/pull/446))
+
+### Fixed
+
+* 5-digit UDP ports now work properly.
+  ([#443](https://github.com/Kong/charts/pull/443))
+* Fixed port name used for NLB annotation example.
+  ([#458](https://github.com/Kong/charts/pull/458))
+* Fixed a compatibility issue with Helm's `--set-file` feature and
+  user-provided DB-less configuration ConfigMaps.
+  ([#465](https://github.com/Kong/charts/pull/465))
+
+## 2.3.0
+
+### Breaking Changes
+
+* Upgraded CRDs to V1 from the previous deprecated v1beta1.
+  [#391](https://github.com/kong/charts/issues/391)
+  ACTION REQUIRED: This is a breaking change as it makes
+  this chart incompatible with Kubernetes clusters older
+  than v1.16.x. Upgrade your cluster to a version greater
+  than or equal to v1.16 before installing.
+  Note that technically it will remain possible to deploy
+  on older clusters by managing the CRDs manually ahead of
+  time (e.g. intentionally deploying the legacy CRDs) but
+  these configurations will be considered unsupported.
+  [upgrade](https://kubernetes.io/docs/tasks/administer-cluster/cluster-upgrade/)
+  ACTION REQUIRED: For existing deployments Helm avoids managing
+  CRDs so when upgrading from a previous release you will need
+  to apply the new V1 versions of the CRDs (in `crds/`) manually.
+  [hip-0011](https://github.com/helm/community/blob/main/hips/hip-0011.md)
+  ([#415](https://github.com/Kong/charts/pull/415))
+* Added support for controller metrics to the Prometheus resources. This
+  requires KIC 2.x. The chart automatically detects if your controller image is
+  compatible, but only if your tag is semver-compliant. If you are using an
+  image without a semver-compliant tag (such as `next`) you _must_ set the
+  `ingressController.image.effectiveSemver` value to a semver string
+  appropriate for your image (for example, if your image is 2.0.0-based, you
+  would set it to `2.0.0`.
+  ([#430](https://github.com/Kong/charts/pull/430))
+
+### Improvements
+
+* Updated default Kong versions to 2.5 (OSS) and 2.5.0.0 (Enterprise).
+* Added user-configured initContainer support to Jobs.
+  ([#408](https://github.com/Kong/charts/pull/408))
+* Upgraded RBAC resources to v1 from v1beta1 for compatibility with Kubernetes
+  1.22 and newer. This breaks compatibility with Kubernetes 1.7 and older, but
+  these Kubernetes versions were never supported, so this change is not
+  breaking. Added additional permissions to support KIC 2.x.
+  ([#420](https://github.com/Kong/charts/pull/420))
+  ([#419](https://github.com/Kong/charts/pull/419))
+* Added `ingressController.watchNamespaces[]` to values.yaml. When set, the
+  controller will only watch the listed namespaces (instead of all namespaces,
+  the default), and will create Roles for each namespace (instead of a
+  ClusterRole). This feature requires KIC 2.x.
+  ([#420](https://github.com/Kong/charts/pull/420))
+* Added support for [dnsPolicy and
+  dnsConfig](https://kubernetes.io/docs/tasks/administer-cluster/nodelocaldns/).
+  ([#425](https://github.com/Kong/charts/pull/425))
+* Use migration commands directly in upgrade/install Jobs instead of invoking
+  them via a shell. This adds support for some additional features in Kong
+  images that only apply when the container command starts with `kong`.
+  ([#429](https://github.com/Kong/charts/pull/429))
+
+### Fixed
+* Fixed an incorrect template for DaemonSet releases.
+  ([#426](https://github.com/Kong/charts/pull/426))
+
+## 2.2.0
+
+### Breaking changes
+
+* Removed default `maxUnavailable` setting for pod disruption budget
+  configuration. This is necessary to allow usage of the `minUnavailable`
+  setting, but means that there is no longer any default availability
+  constraint. If you set `podDisruptionBudget.enabled=true` in your values and
+  did not previously set any `podDisruptionBudget.maxUnavailable` value, you
+  must add `podDisruptionBudget.maxUnavailable="50%"` to your values.
+
+### Improvements
+
+* Added host alias injection to override DNS and/or add DNS entries not
+  available from the DNS resolver.
+  ([#366](https://github.com/Kong/charts/pull/366))
+* Added support for custom labels.
+  ([#370](https://github.com/Kong/charts/pull/370))
+* Only add paths to Ingresses if configured, for OpenShift 4.x compatibility.
+  ([#375](https://github.com/Kong/charts/pull/375))
+* Kong containers no longer the image ENTRYPOINT. This allows the stock image
+  bootstrap scripts to run normally.
+  ([#377](https://github.com/Kong/charts/pull/377))
+* Added security context settings for containers.
+  ([#387](https://github.com/Kong/charts/pull/387))
+* Bumped Kong and controller image defaults to the latest versions.
+  ([#378](https://github.com/Kong/charts/pull/378))
+* Added support for user-provided admission webhook certificates.
+  ([#385](https://github.com/Kong/charts/pull/385))
+* Disable service account tokens when it is unnecessary.
+  ([#389](https://github.com/Kong/charts/pull/389))
+
+### Fixed
+
+* Admission webhook port is now listed under the controller container, where
+  the admission webhook runs.
+  ([#384](https://github.com/Kong/charts/pull/384))
+
+### Documentation
+
+* Removed a duplicate key from example values.
+  ([#360](https://github.com/Kong/charts/pull/360))
+* Clarified Enterprise free mode usage.
+  ([#362](https://github.com/Kong/charts/pull/362))
+* Expand EKS Service annotation examples for proxy.
+  ([#376](https://github.com/Kong/charts/pull/375))
+
 ## 2.1.0
 
 ### Improvements

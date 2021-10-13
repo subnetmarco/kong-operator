@@ -17,6 +17,9 @@ upgrading from a previous version.
 ## Table of contents
 
 - [Upgrade considerations for all versions](#upgrade-considerations-for-all-versions)
+- [2.4.0](#240)
+- [2.3.0](#230)
+- [2.2.0](#220)
 - [2.1.0](#210)
 - [2.0.0](#200)
 - [1.14.0](#1140)
@@ -57,6 +60,123 @@ text ending with `field is immutable`. This is typically due to a bug with the
 `init-migrations` job, which was not removed automatically prior to 1.5.0.
 If you encounter this error, deleting any existing `init-migrations` jobs will
 clear it.
+
+## 2.4.0
+
+### Disable ingress controller prior to 2.x upgrade when using PostgreSQL
+
+Chart version 2.4 is the first Kong chart version that defaults to the 2.x
+series of ingress controller releases. 2.x uses a different leader election
+system than 1.x. If both versions are running simultaneously, both controller
+versions will attempt to interact with the admin API, potentially setting
+inconsistent configuration in the database when PostgreSQL is the backend.
+
+If you are configured with the following:
+
+- ingressController.enabled=true
+- postgresql.enabled=true
+
+and do not override the ingress controller version, you must perform a
+preliminary upgrade to disable the ingress controller prior to upgrading to the
+chart version 2.4.
+
+While the controller is disabled, changes to Kubernetes configuration (Ingress
+resources, KongPlugin resources, Service Endpoints, etc.) will not update Kong
+proxy configuration. We recommend you establish an active maintenance window
+under which to perform this upgrade and inform users and stakeholders so as to
+avoid unexpected disruption.
+
+First, run an upgrade that keeps the current version, but disables the ingress
+controller:
+
+```console
+$ helm upgrade --wait \
+  --set ingressController.enabled=false \
+  --version <CURRENT_CHART_VERSION> \
+  --namespace <YOUR_RELEASE_NAMESPACE> \
+  <YOUR_RELEASE_NAME> kong/kong
+```
+
+Once the upgrade completes you will only have the proxy itself running, and can
+run a second upgrade to re-enable the ingress controller and update to chart
+version 2.4:
+
+```console
+$ helm upgrade \
+  --set ingressController.enabled=true \
+  --version 2.4.0 \
+  --namespace <YOUR_RELEASE_NAMESPACE> \
+  <YOUR_RELEASE_NAME> kong/kong
+```
+
+### Changed ServiceAccount configuration location
+
+2.4.0 moved ServiceAccount configuration from
+`ingressController.serviceAccount` to `deployment.serviceAccount` to accomodate
+configurations that required a ServiceAccount but did not use the controller.
+If you disable ServiceAccount or override its name, you must move your
+configuration under `deployment.serviceAccount`. The chart will warn you if it
+detects non-default configuration in the original location when you upgrade.
+You can use `helm upgrade --dry-run` to see if you are affected before actually
+upgrading.
+
+## 2.3.0
+
+### Updated CRDs and CRD API version
+
+2.3.0 adds new and updated CRDs for KIC 2.x. These CRDs are compatible with
+KIC 1.x also. The CRD API version is now v1, replacing the deprecated v1beta1,
+to support Kubernetes 1.22 and onward. API version v1 requires Kubernetes 1.16
+and newer.
+
+Helm 2-style CRD management will upgrade CRDs automatically. You can check to
+see if you are using Helm 2-style management by running:
+
+```
+kubectl get crd kongconsumers.configuration.konghq.com -o yaml | grep "meta.helm.sh/release-name"
+```
+
+If you see output, you are using Helm 2-style CRD management.
+
+Helm 3-style CRD management (the default) does not upgrade CRDs automatically.
+You must apply the changes manually by running:
+
+```
+kubectl apply -f https://raw.githubusercontent.com/Kong/charts/kong-2.2.0/charts/kong/crds/custom-resource-definitions.yaml
+```
+
+Although not recommended, you can remain on an older Kubernetes version and not
+upgrade your CRDs if you are using Helm 3-style CRD management. However, you
+will not be able to run KIC 2.x, and these configurations are considered
+unsupported.
+
+### Ingress controller feature detection
+
+2.3.0 includes some features that are enabled by default, but require KIC 2.x.
+KIC 2.x is not yet the default ingress controller version because there are
+currently only preview releases for it. To maintain compatibility with KIC 1.x,
+the chart automatically detects the KIC image version and disables incompatible
+features. This feature detection requires a semver image tag, and the chart
+cannot render successfully if the image tag is not semver-compliant.
+
+Standard KIC images do use semver-compliant tags, and you do not need to make
+any configuration changes if you use one. If you use a non-semver tag, such as
+`next`, you must set the new `ingressController.image.effectiveSemver` field to
+your approximate semver version. For example, if your `next` tag is for an
+unreleased `2.1.0` KIC version, you should set `effectiveSemver: 2.1.0`.
+
+## 2.2.0
+
+### Changes to pod disruption budget defaults
+
+Prior to 2.2.0, the default values.yaml included
+`podDisruptionBudget.maxUnavailable: 50%`. This prevented setting
+`podDisruptionBudget.minUnavailable` at all. To allow use of
+`podDisruptionBudget.minUnavailable`, we have removed the
+`podDisruptionBudget.maxUnavailable` default. If you previously relied on this
+default (you set `podDisruptionBudget.enabled: true` but did not set
+`podDisruptionBudget.maxUnavailable`), you now must explicitly set
+`podDisruptionBudget.maxUnavailable: 50%` in your values.yaml.
 
 ## 2.1.0
 

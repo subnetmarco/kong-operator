@@ -50,7 +50,7 @@ jobs:
 
     - name: 'Arrange: Set up microk8s'
       run: |
-        sudo snap install microk8s --channel 1.18/stable --classic
+        sudo snap install microk8s --channel 1.22/stable --classic
         for addon in dns rbac registry
         do
           sudo microk8s enable $addon
@@ -58,7 +58,7 @@ jobs:
         mkdir -p ~/.kube
         sudo chown $USER -R ~/.kube
         sudo microk8s.config > ~/.kube/config
-        sudo curl -L https://storage.googleapis.com/kubernetes-release/release/v1.18.4/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl
+        sudo curl -L https://storage.googleapis.com/kubernetes-release/release/v1.22.2/bin/linux/amd64/kubectl -o /usr/local/bin/kubectl
         kubectl wait --for=condition=Available deploy -n container-registry registry --timeout=120s
 
     - uses: actions/download-artifact@v2
@@ -101,21 +101,20 @@ jobs:
         kubectl wait --for=condition=Available deploy kong2-kong --timeout=120s
 
         kubectl wait --for=condition=Available deploy echo --timeout=120s
-        wait_for 'kubectl get ingress demo1 -o jsonpath={.status.loadBalancer.ingress}' ".+" 120
-        wait_for 'kubectl get ingress demo2 -o jsonpath={.status.loadBalancer.ingress}' ".+" 120
 
     - name: 'Assert: Validate Ingress'
       run: |
         set -x
+        . test/integration/helpers.sh
 
         PROXY1_IP=$(kubectl get service kong1-kong-proxy -o jsonpath={.spec.clusterIP})
         PROXY2_IP=$(kubectl get service kong2-kong-proxy -o jsonpath={.spec.clusterIP})
 
-        [ "$(curl -sw '%{http_code}' -o /dev/null http://$PROXY1_IP/via-kong1/)" == 200 ]
-        [ "$(curl -sw '%{http_code}' -o /dev/null http://$PROXY2_IP/via-kong2/)" == 200 ]
+        wait_for "curl -sw '%{http_code}' -o /dev/null http://$PROXY1_IP/via-kong1/" "200" 120
+        wait_for "curl -sw '%{http_code}' -o /dev/null http://$PROXY2_IP/via-kong2/" "200" 120
 
-        [ "$(curl -sw '%{http_code}' -o /dev/null http://$PROXY1_IP/via-kong2/)" == 404 ]
-        [ "$(curl -sw '%{http_code}' -o /dev/null http://$PROXY2_IP/via-kong1/)" == 404 ]
+        wait_for "curl -sw '%{http_code}' -o /dev/null http://$PROXY1_IP/via-kong2/" "404" 30
+        wait_for "curl -sw '%{http_code}' -o /dev/null http://$PROXY2_IP/via-kong1/" "404" 30
 
     - name: 'Print debugging information'
       if: ${{ always() }}

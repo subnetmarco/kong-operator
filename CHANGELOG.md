@@ -1,5 +1,79 @@
 # Changelog
 
+## 0.9.0
+
+### Breaking changes
+
+* 0.9.0 changes the API group used for the Kong CRD to `charts.konghq.com`.
+  This is necessary to comply with new requirements for `*.k8s.io` groups
+  enforced by Kubernetes 1.22 and newer. Because of this change, you **cannot
+  upgrade to 0.9.0 from previous releases of the operator, and must manually
+  copy configuration from your existing kongs.charts.helm.k8s.io CRs into new
+  kongs.charts.konghq.com CRs.** See the "Upgrading from previous versions"
+  section below for detailed instructions.
+* Chart 2.4 updates the default version of KIC to 2.0. If you do not override
+  your KIC version to an older 1.x version and you use a database, you should
+  [temporarily disable KIC before upgrading it to 2.0](https://github.com/Kong/charts/blob/kong-2.4.0/charts/kong/UPGRADE.md#disable-ingress-controller-prior-to-2x-upgrade-when-using-postgresql)
+  to avoid database inconsistency.
+* ServiceAccount configuration has a [new location inside Kong custom
+  resources](https://github.com/Kong/charts/blob/kong-2.4.0/charts/kong/UPGRADE.md#changed-serviceaccount-configuration-location)
+  to support configurations that require a ServiceAccount but do not use the
+  ingress controller.
+* Various resources [now use updated API versions](https://github.com/Kong/charts/blob/kong-2.4.0/charts/kong/UPGRADE.md#changed-serviceaccount-configuration-location)
+  for compatibility with newer Kubernetes releases. These versions require
+  Kubernetes 1.16 or newer. Note that the upgraded Ingress resources now use
+  the `ingressClassName` field: you should remove `ingress.class` annotations
+  and set their value in `ingressClassName` to account for [changes to the
+  Ingress spec](https://docs.konghq.com/kubernetes-ingress-controller/2.0.x/concepts/ingress-versions/).
+* The [Pod disruption budget default has changed](https://github.com/Kong/charts/blob/kong-2.4.0/charts/kong/UPGRADE.md#changes-to-pod-disruption-budget-defaults)
+  to allow support for the `minUnavailable` setting. You may wish to restore
+  the older default if you are upgrading from a previous version.
+
+### Upgrading from previous versions
+
+0.9.0 changes the CRD API group used by this operator. The new
+`kongs.charts.konghq.com` CRD and old `kongs.charts.helm.k8s.io` CRD have
+identical specs, but you must manually copy data into new CRs to migrate your
+configuration. We recommend backing up your cluster prior to migrating.
+
+Because the old CRD is not compatible with Kubernetes 1.22, you must complete
+these steps on Kubernetes 1.21 or older. To migrate your configuration:
+
+1. Install the new CRD:
+   ```
+   kubectl create -f https://raw.githubusercontent.com/Kong/kong-operator/v0.9.0/deploy/crds/charts_v1alpha1_kong_crd.yaml
+   ```
+2. Using [jq](https://stedolan.github.io/jq/), create new CRs from your
+   existing CRs:
+   ```
+   kubectl get kongs.charts.helm.k8s.io --all-namespaces -o json | jq ".items[] | del(.metadata.uid, .metadata.creationTimestamp, .metadata.generation, .metadata.resourceVersion) | .apiVersion=\"charts.konghq.com/v1alpha1\"" | kubectl create -f -
+   ```
+3. Plan an outage window where you will upgrade to Kubernetes 1.22 and install
+   the new operator. Because you will uninstall previous versions of the
+   operator, there will be a period when your Kong instances will not be
+   available.
+4. Begin your outage window. Delete existing Kong instances and remove the
+   operator CRD:
+   ```
+   kubectl delete kongs --all-namespaces --all
+   ```
+   This will _stop all running Kong instances_.
+5. [Uninstall the Kong operator](https://olm.operatorframework.io/docs/tasks/uninstall-operator/)
+   and run `kubectl delete crds kongs.charts.helm.k8s.io` to remove the old
+   CRD.
+5. Install Kong operator 0.9.0 by creating a [new subscription](https://olm.operatorframework.io/docs/getting-started/#installing-an-operator-using-olm)
+   with `startingCSV: kong.v0.9.0`.
+6. Check the status of your Kong instances with `kubectl get deploy` in
+   namespaces you've installed Kong. 0.9.0 should detect the new CRs and start
+   Kong instances automatically.
+
+### Improvements
+
+* Upgraded to chart 2.4. See the [chart changelog](https://github.com/Kong/charts/blob/kong-2.4.0/charts/kong/CHANGELOG.md)
+  for full details.
+* Upgraded the Kong CRD API version to `apiextensions.k8s.io/v1` for
+  compatibility with Kubernetes 1.22 and newer.
+
 ## 0.8.0
 
 ### Breaking changes

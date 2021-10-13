@@ -2,7 +2,7 @@
 # use single image strings instead of repository/tag
 
 image:
-  unifiedRepoTag: kong:2.4
+  unifiedRepoTag: kong:2.5
 proxy:
   type: NodePort
 
@@ -12,5 +12,5 @@ ingressController:
   env:
     anonymous_reports: "false"
   image:
-    unifiedRepoTag: kong/kubernetes-ingress-controller:1.2.0
+    unifiedRepoTag: kong/kubernetes-ingress-controller:1.3.1
   installCRDs: false
