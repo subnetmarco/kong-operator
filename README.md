@@ -55,7 +55,7 @@ With Kong Operator running in your cluster, you can spin up multiple instances o
     1. Create an Ingress:
         ```
         kubectl create -f - <<EOF
-        apiVersion: extensions/v1beta1
+        apiVersion: networking.k8s.io/v1
         kind: Ingress
         metadata:
           name: demo
@@ -70,9 +70,12 @@ With Kong Operator running in your cluster, you can spin up multiple instances o
           - http:
               paths:
               - path: /foo
+                pathType: Prefix
                 backend:
-                  serviceName: echo
-                  servicePort: 8080
+                  service:
+                    name: echo
+                    port:
+                      number: 8080
         EOF
         ```
 1. See that Kong works and relays requests to the application!
