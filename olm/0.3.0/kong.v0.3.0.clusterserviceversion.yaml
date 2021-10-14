@@ -5,8 +5,8 @@ metadata:
     alm-examples: '[{"apiVersion":"charts.helm.k8s.io/v1alpha1","kind":"Kong","metadata":{"name":"example-kong"},"spec":{"proxy":{"type":"NodePort"},"env":{"prefix":"/kong_prefix/"},"resources":{"limits":{"cpu":"500m","memory":"2G"},"requests":{"cpu":"100m","memory":"512Mi"}},"ingressController":{"enabled":true,"installCRDs":false}}}]'
     capabilities: Basic Install
     categories: Networking
-    certified: 'false'
-    containerImage: kong/kong-operator:v0.3.0
+    certified: 'true'
+    containerImage: registry.connect.redhat.com/kong/kong-operator1:v0.3.0-certified
     createdAt: '2020-04-10T17:26:45Z'
     description: Install and manage Kong clusters.
     repository: https://github.com/kong/kong-operator
@@ -182,4 +182,3 @@ spec:
   provider:
     name: Kong Inc
   version: 0.3.0
-  replaces: kong.v0.2.6
