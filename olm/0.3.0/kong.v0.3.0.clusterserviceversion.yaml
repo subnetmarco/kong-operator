@@ -39,6 +39,14 @@ spec:
       clusterPermissions:
       - rules:
         - apiGroups:
+          - security.openshift.io
+          resources:
+          - securitycontextconstraints
+          resourceNames:
+          - anyuid
+          verbs:
+          - use
+        - apiGroups:
           - extensions
           resources:
           - ingresses
