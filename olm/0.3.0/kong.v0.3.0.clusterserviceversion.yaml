@@ -139,7 +139,13 @@ spec:
                       fieldPath: metadata.name
                 - name: OPERATOR_NAME
                   value: kong-operator
-                image: kong/kong-operator:v0.3.0
+                - name: RELATED_IMAGE_KONG
+                  value: registry.connect.redhat.com/kong/kong:2.0.4
+                - name: RELATED_IMAGE_KONG_CONTROLLER
+                  value: registry.connect.redhat.com/kong/kong-ingress-controller:0.9.0
+                - name: RELATED_IMAGE_UTILITY
+                  value: registry.access.redhat.com/ubi8/ubi:latest
+                image: registry.connect.redhat.com/kong/kong-operator1:v0.3.0-certified
                 imagePullPolicy: Always
                 name: kong-operator
               serviceAccountName: kong-operator
