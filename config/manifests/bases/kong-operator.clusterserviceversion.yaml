@@ -1,0 +1,54 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  annotations:
+    alm-examples: '[]'
+    capabilities: Basic Install
+  name: kong-operator.v0.0.0
+  namespace: placeholder
+spec:
+  apiservicedefinitions: {}
+  customresourcedefinitions: {}
+  description: The world’s most popular open source API gateway. Built for multi-cloud
+    and hybrid, optimized for microservices and distributed architectures.
+  displayName: Kong Operator
+  icon:
+  - base64data: ""
+    mediatype: ""
+  install:
+    spec:
+      deployments: null
+    strategy: ""
+  installModes:
+  - supported: false
+    type: OwnNamespace
+  - supported: false
+    type: SingleNamespace
+  - supported: false
+    type: MultiNamespace
+  - supported: true
+    type: AllNamespaces
+  keywords:
+  - kong
+  - ingress
+  - controller
+  - microservices
+  - kubernetes
+  - gateway
+  - api
+  - management
+  links:
+  - name: Kong Operator
+    url: https://kong-operator.domain
+  maintainers:
+  - email: michal.flendrich@konghq.com
+    name: Michal
+  - email: traines@konghq.com
+    name: Travis
+  - email: shane.utt@konghq.com
+    name: Shane
+  maturity: alpha
+  provider:
+    name: Kong Inc.
+    url: https://konghq.com/
+  version: 0.0.0

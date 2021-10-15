@@ -36,7 +36,7 @@ IMAGE_TAG_BASE ?= konghq.com/kong-operator
 BUNDLE_IMG ?= $(IMAGE_TAG_BASE)-bundle:v$(VERSION)
 
 # Image URL to use all building/pushing image targets
-IMG ?= controller:latest
+IMG ?= registry.connect.redhat.com/kong/kong-offline-operator1:v0.10.0-certified
 
 all: docker-build
 
