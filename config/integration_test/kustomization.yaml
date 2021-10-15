@@ -3,6 +3,6 @@ kind: Kustomization
 bases:
 - ../default
 images:
-- name: controller
+- name: registry.connect.redhat.com/kong/kong-operator1
   newName: localhost:32000/kong-operator
   newTag: ci

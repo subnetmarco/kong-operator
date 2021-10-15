@@ -124,7 +124,7 @@ jobs:
 
           for podName in $(kubectl get pod -n "$ns" -o name); do
             for containerName in $(kubectl get "$podName" -n "$ns" -o jsonpath='{range .spec.containers[*]}{.name}{"\n"}{end}'); do
-              kubectl logs "$podName" -n "$ns" -c "$containerName"
+              kubectl logs "$podName" -n "$ns" -c "$containerName" || true
             done
           done
         done
