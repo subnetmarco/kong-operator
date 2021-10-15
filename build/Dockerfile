@@ -9,5 +9,7 @@ LABEL name="kong-operator" \
       summary="kong-operator installs and manages Kong in your k8s environemnt" \
       description="kong-operator installs and manages Kong in your k8s environemnt"
 
+RUN yum -y update-minimal --security --sec-severity=Important --sec-severity=Critical
+
 COPY watches.yaml ${HOME}/watches.yaml
 COPY helm-charts/ ${HOME}/helm-charts/
