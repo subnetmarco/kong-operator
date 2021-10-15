@@ -1,0 +1,8 @@
+domain: konghq.com
+layout:
+- helm.sdk.operatorframework.io/v1
+plugins:
+  manifests.sdk.operatorframework.io/v2: {}
+  scorecard.sdk.operatorframework.io/v2: {}
+projectName: kong-operator
+version: "3"
