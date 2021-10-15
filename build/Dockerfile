@@ -1,11 +1,11 @@
-FROM quay.io/operator-framework/helm-operator:v0.17.2
+FROM quay.io/operator-framework/helm-operator:v0.19.4
 
 ADD LICENSE /licenses/LICENSE
 
 LABEL name="kong-operator" \
       maintainer="harry@konghq.com" \
       vendor="Kong Inc" \
-      version="v0.9.0" \
+      version="v0.9.1" \
       summary="kong-operator installs and manages Kong in your k8s environemnt" \
       description="kong-operator installs and manages Kong in your k8s environemnt"
 

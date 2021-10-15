@@ -2,6 +2,12 @@
 
 ## 0.9.0
 
+### Improvements
+
+* Updated the helm-operator base image to v0.19.4.
+
+## 0.9.0
+
 ### Breaking changes
 
 * 0.9.0 changes the API group used for the Kong CRD to `charts.konghq.com`.
