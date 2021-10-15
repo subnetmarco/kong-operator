@@ -3,7 +3,7 @@ FROM quay.io/operator-framework/helm-operator:v1.13.0
 
 ADD LICENSE /licenses/LICENSE
 
-LABEL name="kong-offline-operator" \
+LABEL name="kong-operator" \
       maintainer="harry@konghq.com" \
       vendor="Kong Inc" \
       version="v0.10.0" \
