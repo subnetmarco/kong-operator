@@ -119,7 +119,7 @@ jobs:
       run: |
         set -x
 
-        for ns in default kong kube-system container-registry; do
+        for ns in default kong-operator-system kong kube-system container-registry; do
           kubectl describe all -n "$ns"
 
           for podName in $(kubectl get pod -n "$ns" -o name); do
