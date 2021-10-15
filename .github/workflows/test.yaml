@@ -31,7 +31,7 @@ jobs:
       with:
         repository: kong-operator
         tags: ci
-        dockerfile: build/Dockerfile
+        dockerfile: Dockerfile
         push: false
 
     - run: docker save kong-operator:ci > kong-operator-ci.tar
@@ -75,12 +75,10 @@ jobs:
       run: |
         . test/integration/helpers.sh
 
-        kubectl apply -f deploy/crds/charts_v1alpha1_kong_crd.yaml
-        kubectl apply -f deploy/
-        kubectl apply -f test/integration/operator-deployment.yaml
+        kubectl apply -k config/integration_test
 
         wait_for 'kubectl get deploy -n kong kong-operator -o name' ".+" 30
-        kubectl wait --for=condition=Available deploy -n kong kong-operator --timeout=120s
+        kubectl wait --for=condition=Available deploy -n kong-operator-system kong-operator-controller-manager --timeout=120s
 
     - name: 'Act: Create workloads'
       run: |
