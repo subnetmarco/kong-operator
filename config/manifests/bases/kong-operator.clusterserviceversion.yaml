@@ -6,7 +6,7 @@ metadata:
     capabilities: Basic Install
     categories: Networking
     certified: 'false'
-    containerImage: registry.connect.redhat.com/kong/kong-operator1:v0.10.0-certified
+    containerImage: registry.connect.redhat.com/kong/kong-offline-operator1:v0.10.0-certified
     createdAt: '2020-08-05T16:07:00Z'
     description: The world’s most popular open source API gateway. Built for multi-cloud and hybrid, optimized for microservices and distributed architectures.
     repository: https://github.com/kong/kong-operator

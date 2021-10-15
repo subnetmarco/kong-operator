@@ -2,485 +2,75 @@ apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
   annotations:
-    alm-examples: |-
-      [
-        {
-          "apiVersion": "charts.konghq.com/v1alpha1",
-          "kind": "Kong",
-          "metadata": {
-            "name": "example-kong"
-          },
-          "spec": {
-            "admin": {
-              "annotations": {},
-              "enabled": false,
-              "http": {
-                "containerPort": 8001,
-                "enabled": false,
-                "parameters": [],
-                "servicePort": 8001
-              },
-              "ingress": {
-                "annotations": {},
-                "enabled": false,
-                "hostname": null,
-                "ingressClassName": null,
-                "path": "/"
-              },
-              "labels": {},
-              "tls": {
-                "containerPort": 8444,
-                "enabled": true,
-                "parameters": [
-                  "http2"
-                ],
-                "servicePort": 8444
-              },
-              "type": "NodePort"
-            },
-            "autoscaling": {
-              "enabled": false,
-              "maxReplicas": 5,
-              "metrics": [
-                {
-                  "resource": {
-                    "name": "cpu",
-                    "target": {
-                      "averageUtilization": 80,
-                      "type": "Utilization"
-                    }
-                  },
-                  "type": "Resource"
-                }
-              ],
-              "minReplicas": 2,
-              "targetCPUUtilizationPercentage": null
-            },
-            "cluster": {
-              "annotations": {},
-              "enabled": false,
-              "labels": {},
-              "tls": {
-                "containerPort": 8005,
-                "enabled": false,
-                "parameters": [],
-                "servicePort": 8005
-              },
-              "type": "ClusterIP"
-            },
-            "clustertelemetry": {
-              "annotations": {},
-              "enabled": false,
-              "labels": {},
-              "tls": {
-                "containerPort": 8006,
-                "enabled": false,
-                "parameters": [],
-                "servicePort": 8006
-              },
-              "type": "ClusterIP"
-            },
-            "containerSecurityContext": {},
-            "dblessConfig": {
-              "config": "_format_version: \"1.1\"\nservices:\n  # Example configuration\n  # - name: example.com\n  #   url: http://example.com\n  #   routes:\n  #   - name: example\n  #     paths:\n  #     - \"/example\"\n",
-              "configMap": ""
-            },
-            "deployment": {
-              "daemonset": false,
-              "kong": {
-                "enabled": true
-              },
-              "serviceAccount": {
-                "create": true
-              },
-              "test": {
-                "enabled": false
-              }
-            },
-            "deploymentAnnotations": {
-              "kuma.io/gateway": "enabled",
-              "traffic.sidecar.istio.io/includeInboundPorts": ""
-            },
-            "enterprise": {
-              "enabled": false,
-              "portal": {
-                "enabled": false
-              },
-              "rbac": {
-                "admin_gui_auth": "basic-auth",
-                "admin_gui_auth_conf_secret": "CHANGEME-admin-gui-auth-conf-secret",
-                "enabled": false,
-                "session_conf_secret": "kong-session-config"
-              },
-              "smtp": {
-                "admin_emails_from": "none@example.com",
-                "admin_emails_reply_to": "none@example.com",
-                "auth": {
-                  "smtp_password_secret": "CHANGEME-smtp-password",
-                  "smtp_username": ""
-                },
-                "enabled": false,
-                "portal_emails_from": "none@example.com",
-                "portal_emails_reply_to": "none@example.com",
-                "smtp_admin_emails": "none@example.com",
-                "smtp_auth_type": "",
-                "smtp_host": "smtp.example.com",
-                "smtp_port": 587,
-                "smtp_ssl": "nil",
-                "smtp_starttls": true
-              },
-              "vitals": {
-                "enabled": true
-              }
-            },
-            "env": {
-              "admin_access_log": "/dev/stdout",
-              "admin_error_log": "/dev/stderr",
-              "admin_gui_access_log": "/dev/stdout",
-              "admin_gui_error_log": "/dev/stderr",
-              "database": "off",
-              "nginx_worker_processes": "2",
-              "portal_api_access_log": "/dev/stdout",
-              "portal_api_error_log": "/dev/stderr",
-              "prefix": "/kong_prefix/",
-              "proxy_access_log": "/dev/stdout",
-              "proxy_error_log": "/dev/stderr"
-            },
-            "extraConfigMaps": [],
-            "extraLabels": {},
-            "extraSecrets": [],
-            "image": {
-              "pullPolicy": "IfNotPresent",
-              "repository": "kong",
-              "tag": "2.5"
-            },
-            "ingressController": {
-              "admissionWebhook": {
-                "certificate": {
-                  "provided": false
-                },
-                "enabled": false,
-                "failurePolicy": "Fail",
-                "port": 8080
-              },
-              "args": [],
-              "enabled": true,
-              "env": {
-                "kong_admin_tls_skip_verify": true
-              },
-              "image": {
-                "effectiveSemver": null,
-                "repository": "kong/kubernetes-ingress-controller",
-                "tag": "2.0"
-              },
-              "ingressClass": "kong",
-              "ingressClassAnnotations": {},
-              "livenessProbe": {
-                "failureThreshold": 3,
-                "httpGet": {
-                  "path": "/healthz",
-                  "port": 10254,
-                  "scheme": "HTTP"
-                },
-                "initialDelaySeconds": 5,
-                "periodSeconds": 10,
-                "successThreshold": 1,
-                "timeoutSeconds": 5
-              },
-              "rbac": {
-                "create": true
-              },
-              "readinessProbe": {
-                "failureThreshold": 3,
-                "httpGet": {
-                  "path": "/healthz",
-                  "port": 10254,
-                  "scheme": "HTTP"
-                },
-                "initialDelaySeconds": 5,
-                "periodSeconds": 10,
-                "successThreshold": 1,
-                "timeoutSeconds": 5
-              },
-              "resources": {},
-              "watchNamespaces": []
-            },
-            "lifecycle": {
-              "preStop": {
-                "exec": {
-                  "command": [
-                    "/bin/sh",
-                    "-c",
-                    "/bin/sleep 15 \u0026\u0026 kong quit"
-                  ]
-                }
-              }
-            },
-            "livenessProbe": {
-              "failureThreshold": 3,
-              "httpGet": {
-                "path": "/status",
-                "port": "status",
-                "scheme": "HTTP"
-              },
-              "initialDelaySeconds": 5,
-              "periodSeconds": 10,
-              "successThreshold": 1,
-              "timeoutSeconds": 5
-            },
-            "manager": {
-              "annotations": {},
-              "enabled": true,
-              "http": {
-                "containerPort": 8002,
-                "enabled": true,
-                "parameters": [],
-                "servicePort": 8002
-              },
-              "ingress": {
-                "annotations": {},
-                "enabled": false,
-                "hostname": null,
-                "ingressClassName": null,
-                "path": "/"
-              },
-              "labels": {},
-              "tls": {
-                "containerPort": 8445,
-                "enabled": true,
-                "parameters": [
-                  "http2"
-                ],
-                "servicePort": 8445
-              },
-              "type": "NodePort"
-            },
-            "migrations": {
-              "annotations": {
-                "sidecar.istio.io/inject": false
-              },
-              "backoffLimit": null,
-              "jobAnnotations": {},
-              "postUpgrade": true,
-              "preUpgrade": true,
-              "resources": {}
-            },
-            "nodeSelector": {},
-            "plugins": {},
-            "podAnnotations": {},
-            "podDisruptionBudget": {
-              "enabled": false
-            },
-            "podLabels": {},
-            "podSecurityPolicy": {
-              "enabled": false,
-              "spec": {
-                "allowPrivilegeEscalation": false,
-                "fsGroup": {
-                  "rule": "RunAsAny"
-                },
-                "hostIPC": false,
-                "hostNetwork": false,
-                "hostPID": false,
-                "privileged": false,
-                "readOnlyRootFilesystem": true,
-                "runAsGroup": {
-                  "rule": "RunAsAny"
-                },
-                "runAsUser": {
-                  "rule": "RunAsAny"
-                },
-                "seLinux": {
-                  "rule": "RunAsAny"
-                },
-                "supplementalGroups": {
-                  "rule": "RunAsAny"
-                },
-                "volumes": [
-                  "configMap",
-                  "secret",
-                  "emptyDir"
-                ]
-              }
-            },
-            "portal": {
-              "annotations": {},
-              "enabled": true,
-              "http": {
-                "containerPort": 8003,
-                "enabled": true,
-                "parameters": [],
-                "servicePort": 8003
-              },
-              "ingress": {
-                "annotations": {},
-                "enabled": false,
-                "hostname": null,
-                "ingressClassName": null,
-                "path": "/"
-              },
-              "labels": {},
-              "tls": {
-                "containerPort": 8446,
-                "enabled": true,
-                "parameters": [
-                  "http2"
-                ],
-                "servicePort": 8446
-              },
-              "type": "NodePort"
-            },
-            "portalapi": {
-              "annotations": {},
-              "enabled": true,
-              "http": {
-                "containerPort": 8004,
-                "enabled": true,
-                "parameters": [],
-                "servicePort": 8004
-              },
-              "ingress": {
-                "annotations": {},
-                "enabled": false,
-                "hostname": null,
-                "ingressClassName": null,
-                "path": "/"
-              },
-              "labels": {},
-              "tls": {
-                "containerPort": 8447,
-                "enabled": true,
-                "parameters": [
-                  "http2"
-                ],
-                "servicePort": 8447
-              },
-              "type": "NodePort"
-            },
-            "postgresql": {
-              "enabled": false
-            },
-            "priorityClassName": "",
-            "proxy": {
-              "annotations": {},
-              "enabled": true,
-              "http": {
-                "containerPort": 8000,
-                "enabled": true,
-                "parameters": [],
-                "servicePort": 80
-              },
-              "ingress": {
-                "annotations": {},
-                "enabled": false,
-                "hostname": null,
-                "ingressClassName": null,
-                "path": "/"
-              },
-              "labels": {
-                "enable-metrics": "true"
-              },
-              "stream": {},
-              "tls": {
-                "containerPort": 8443,
-                "enabled": true,
-                "parameters": [
-                  "http2"
-                ],
-                "servicePort": 443
-              },
-              "type": "LoadBalancer"
-            },
-            "readinessProbe": {
-              "failureThreshold": 3,
-              "httpGet": {
-                "path": "/status",
-                "port": "status",
-                "scheme": "HTTP"
-              },
-              "initialDelaySeconds": 5,
-              "periodSeconds": 10,
-              "successThreshold": 1,
-              "timeoutSeconds": 5
-            },
-            "replicaCount": 1,
-            "resources": {},
-            "secretVolumes": [],
-            "securityContext": {},
-            "serviceMonitor": {
-              "enabled": false
-            },
-            "status": {
-              "enabled": true,
-              "http": {
-                "containerPort": 8100,
-                "enabled": true,
-                "parameters": []
-              },
-              "tls": {
-                "containerPort": 8543,
-                "enabled": false,
-                "parameters": []
-              }
-            },
-            "terminationGracePeriodSeconds": 30,
-            "tolerations": [],
-            "udpProxy": {
-              "annotations": {},
-              "enabled": false,
-              "labels": {},
-              "stream": {},
-              "type": "LoadBalancer"
-            },
-            "updateStrategy": {},
-            "waitImage": {
-              "enabled": true,
-              "pullPolicy": "IfNotPresent"
-            }
-          }
-        }
-      ]
+    alm-examples: '[{"apiVersion":"charts.konghq.com/v1alpha1","kind":"Kong","metadata":{"name":"example-kong"},"spec":{"proxy":{"type":"NodePort"},"env":{"prefix":"/kong_prefix/"},"resources":{"limits":{"cpu":"500m","memory":"2G"},"requests":{"cpu":"100m","memory":"512Mi"}},"ingressController":{"enabled":true,"installCRDs":false}}}]'
     capabilities: Basic Install
-    operators.operatorframework.io/builder: operator-sdk-v1.12.0+git
-    operators.operatorframework.io/project_layout: helm.sdk.operatorframework.io/v1
-  name: kong-operator.v0.0.1
+    categories: Networking
+    certified: 'false'
+    containerImage: registry.connect.redhat.com/kong/kong-offline-operator1:v0.10.0-certified
+    createdAt: '2020-08-05T16:07:00Z'
+    description: The world’s most popular open source API gateway. Built for multi-cloud and hybrid, optimized for microservices and distributed architectures.
+    repository: https://github.com/kong/kong-operator
+    support: Kong Kubernetes Team
+  name: kong.v0.10.0
   namespace: placeholder
 spec:
-  apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
-    - kind: Kong
+    - description: Defines a Kong cluster (equivalent to a Helm release). Uses the same settings as the Helm chart's values.yaml
+      displayName: Kong
+      kind: Kong
       name: kongs.charts.konghq.com
       version: v1alpha1
-  description: The world’s most popular open source API gateway. Built for multi-cloud
-    and hybrid, optimized for microservices and distributed architectures.
+  description: |
+    Kong is a popular open-source cloud-native API gateway. Kong Operator is a Kubernetes operator which manages [Kong](https://konghq.com/kong/) and [Kong Enterprise](https://konghq.com/products/kong-enterprise/) clusters.
+
+    Kong Operator can deploy Kong in various configurations, for example:
+    * as a [Kubernetes ingress controller](https://github.com/Kong/kubernetes-ingress-controller), enabling you to expose Kubernetes `Service`s via Kong,
+    * a standalone Kong gateway (without the ingress controller; either DB-enabled or DB-less)
+    * a standalone Ingress Controller (configuring an external instance of Kong)
+
+    Those configurations are further described in the [_Deployment Options_](https://github.com/Kong/kong-operator/blob/v0.9.0/helm-charts/kong/README.md#deployment-options) section of documentation.
+
+    ### Quick Start
+
+    The [Quick Start guide](https://github.com/Kong/kong-operator/blob/v0.9.0/README.md#quick-start) uses Kong Operator to deploy
+    our recommended Kong setup for Kubernetes users (Kong DB-less with Ingress Controller), which includes an instance of Kong
+    serving as a proxy to an example Kubernetes service.
+
+    ### Documentation
+
+    The primary documentation site for Kong Operator is located [in its GitHub repository](https://github.com/Kong/kong-operator/blob/v0.9.0/README.md).
+
+    Kong Operator provides the same configuration flexibility as the Kong Helm chart.
+    Refer to the [Helm chart documentation](https://github.com/Kong/kong-operator/blob/v0.9.0/helm-charts/kong/README.md),
+    the [Configuration](https://github.com/Kong/kong-operator/blob/v0.9.0/README.md#configuration) section of Kong Operator docs, and the example `Kong` resource below.
+
+    ### Upgrading from versions 0.8.0 and earlier
+
+    0.9.0 changes the operator CRD to comply with Kubernetes requirements. Upgrades require manual work to move configuration into the new CRs.
+    See the [0.9.0 upgrade guide](https://github.com/Kong/kong-operator/blob/main/CHANGELOG.md#upgrading-from-previous-versions)
+    for steps to upgrade past 0.8.0.
+
   displayName: Kong Operator
   icon:
-  - base64data: ""
-    mediatype: ""
+  - base64data: iVBORw0KGgoAAAANSUhEUgAAAI4AAACACAMAAADqKaFKAAAAnFBMVEUAAAAANFoAUnIANl0ANFkANFkAOWEANFkANFkAOl8ANFoANFoAOF0AQGMANFoANVoANFkANVoANFkANFkANVoANlwANFkANVoANVoANVoANFoANloAN1sANlsAQ2oANFoANFoANVoAOF0ANFkANVoANVoANFoANVoANlsAQGIANVkANVkANVkANVoANVkANVoANlsANVoANFoANFnuMUUSAAAAM3RSTlMA0AUt+lIYkbMT9u8hDOJ23KOM5loz84Bk68A5J0kJ17qHHMStbJVOQg/MPp57qXBUmslOI9JhAAAEs0lEQVR42szZ226qUBSF4eESFVQqFs/nc7Vat+14/3fbCSVGUVirCWvid+vNTID8mVPYok41hZdR/SHXVbyIcUiS4REvYeAw4mxRPFXjVXuGgnkL3ig1UahywDuNKQpU6TGpj8L0+YR7QCF8l08FZRSgOWeKegfipg2mE09Gy2E66WSoNjXCMeT8o4ZoMg5DaogmY0kN0WSs6tQQTcaJGqLJKFNDNhkuNUSTsaeGbDI+qSGajA7/bAd7xpVbfeqdIOedOm1IcpnNVZDkl5gp8CFqFb7SwwK6moR1YE2/drXb7eJCXjQhbcKSCu/Uu4h8MdNawQoV8F5YRaRdSNdbTPqc/c45YhZnDAu8Bh9s4p8CZmnBgm8+sURk0pAep+xkfcd7R3icRfaLMZAdZ8oUw2ZcU8lx1JxpSj4iruA4W6ZzrzWVGscbMsN7dk3re+SsxkyDrJq+dZGzicNMzvEatQejKmJyu9WwmVbTb4WY5G41PyByErirlKi3UE9qOjwif4O/rFNeYPmk4oc0sk3WdOPDgiXNONP7mn7BhmadhhqTm4fb+4AVNRoLvLimFg8pq5DGRgoRd+Ehydoipb8PzBTs6dBcC/aoGSJ9mvuALYfFBr/ONNaz9g6Xrhvb7IfG3qqwoRveLArVNyYIL8HTXryHaz4vmRvKwEns4RWasJSH5cMejhbNXZAndeaNM0zuFMlTS3689dODiFrTWLiy+B/wRXunSDm15GD8v3YzW0oYCKJoJwyLYqIgpFgECQoquJT0//+bD1CWVePkzk0n55WXLDOd26eHefDZdwqN5rkh4XZdUdpWGk/Z4tT1tA783KoyTfegtHnOqU0Hlw1AafM0IOoFLfQOWkGX315JZmnEc62imHoaEDIwdL5DmBw8DQgZ02VmfGbvopPDTOOZkevlXuMZ8b2OOwpBYKOAYJ5umO3FDg/5YP7mi0ugWgBg9oOC+c1cPYBqwTwUypJf2suja3xynRGP3LS94hTYp9bh3c+vWLXQH2++7x2oEqoFsXRak5Vv2bFqYeofv7141cLWP/5el4xqoesfc6/Nqpau2viW5lQLziyYL4NqgfWP507OrA921TJSMysRXrWcUm5yxzsTu2pZOrUyP+90u2rBT5fv6D4Y1ULUP7pBsKuWUs0UW/nFqFpe1M7OtAAOa1D/SJ7Eo6ZqWSdqxnnZhX3qJV5zhjPItVXLTu0koeDyTqsWR9xAJ0Aw1vGqpdVT4bxq0Vg2wsOrFqK34+FVS+tSb0epFi7p9ZMQi6sGxspDoarmjFtbtGpZSFzsPAuQqSMdNqtaSiESwFVOj4hI1dIVQuY912gLONWyFSLNTvA7tZ2vyUUU8pjJhU19ZzyO3DCKKB4CB1O4D8kgrkemIvltnS43XrUcRSiJlyaERKK3l8vg5RxS+cuUWGl0L5eICHlkv2+YME4iFAi5FLLcMMAvcXljhysvcerABxfSjogAXwxUL/GnDKhaChBO571/feYwKmbyMnQBLue1dsH/DIdDkAj4CpsqphcUkGCwysepG8u8cw9ugY/qK4sQDSexXCouxx0NWTxPJcAWlU9eQPcNDeIEKW/48vmo4LYSYlT5ORf5AWrXrLl1P4wQAAAAAElFTkSuQmCC
+    mediatype: image/png
   install:
     spec:
       clusterPermissions:
       - rules:
         - apiGroups:
           - security.openshift.io
-          resourceNames:
-          - anyuid
           resources:
           - securitycontextconstraints
+          resourceNames:
+          - anyuid
           verbs:
           - use
         - apiGroups:
           - extensions
           resources:
           - ingresses
-          verbs:
-          - '*'
-        - apiGroups:
-          - networking.k8s.io
-          resources:
-          - ingresses
-          - ingressclasses
           verbs:
           - '*'
         - apiGroups:
@@ -505,7 +95,7 @@ spec:
           verbs:
           - '*'
         - apiGroups:
-          - ""
+          - ''
           resources:
           - pods
           - services
@@ -527,13 +117,13 @@ spec:
           verbs:
           - '*'
         - apiGroups:
-          - ""
+          - ''
           resources:
           - namespaces
           verbs:
           - get
         - apiGroups:
-          - ""
+          - ''
           resources:
           - configmaps
           - secrets
@@ -545,116 +135,46 @@ spec:
           - '*'
           verbs:
           - '*'
-        - apiGroups:
-          - authentication.k8s.io
-          resources:
-          - tokenreviews
-          verbs:
-          - create
-        - apiGroups:
-          - authorization.k8s.io
-          resources:
-          - subjectaccessreviews
-          verbs:
-          - create
-        serviceAccountName: kong-operator-controller-manager
+        serviceAccountName: kong-operator
       deployments:
-      - name: kong-operator-controller-manager
+      - name: kong-operator
         spec:
           replicas: 1
           selector:
             matchLabels:
-              control-plane: controller-manager
-          strategy: {}
+              name: kong-operator
           template:
             metadata:
               labels:
-                control-plane: controller-manager
+                name: kong-operator
             spec:
               containers:
-              - args:
-                - --secure-listen-address=0.0.0.0:8443
-                - --upstream=http://127.0.0.1:8080/
-                - --logtostderr=true
-                - --v=10
-                image: gcr.io/kubebuilder/kube-rbac-proxy:v0.8.0
-                name: kube-rbac-proxy
-                ports:
-                - containerPort: 8443
-                  name: https
-                  protocol: TCP
-                resources: {}
-              - args:
-                - --health-probe-bind-address=:8081
-                - --metrics-bind-address=127.0.0.1:8080
-                - --leader-elect
-                - --leader-election-id=kong-operator
-                image: registry.connect.redhat.com/kong/kong-operator1:v0.10.0-certified
-                livenessProbe:
-                  httpGet:
-                    path: /healthz
-                    port: 8081
-                  initialDelaySeconds: 15
-                  periodSeconds: 20
-                name: manager
-                readinessProbe:
-                  httpGet:
-                    path: /readyz
-                    port: 8081
-                  initialDelaySeconds: 5
-                  periodSeconds: 10
-                resources:
-                  limits:
-                    cpu: 200m
-                    memory: 100Mi
-                  requests:
-                    cpu: 100m
-                    memory: 60Mi
-                securityContext:
-                  allowPrivilegeEscalation: false
-              securityContext:
-                runAsNonRoot: true
-              serviceAccountName: kong-operator-controller-manager
-              terminationGracePeriodSeconds: 10
-      permissions:
-      - rules:
-        - apiGroups:
-          - ""
-          resources:
-          - configmaps
-          verbs:
-          - get
-          - list
-          - watch
-          - create
-          - update
-          - patch
-          - delete
-        - apiGroups:
-          - coordination.k8s.io
-          resources:
-          - leases
-          verbs:
-          - get
-          - list
-          - watch
-          - create
-          - update
-          - patch
-          - delete
-        - apiGroups:
-          - ""
-          resources:
-          - events
-          verbs:
-          - create
-          - patch
-        serviceAccountName: kong-operator-controller-manager
+              - env:
+                - name: WATCH_NAMESPACE
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.annotations['olm.targetNamespaces']
+                - name: POD_NAME
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.name
+                - name: OPERATOR_NAME
+                  value: kong-operator
+                - name: RELATED_IMAGE_KONG
+                  value: registry.connect.redhat.com/kong/kong:2.4.0
+                - name: RELATED_IMAGE_KONG_CONTROLLER
+                  value: registry.connect.redhat.com/kong/kong-ingress-controller:2.0.2
+                - name: RELATED_IMAGE_UTILITY
+                  value: registry.access.redhat.com/ubi8/ubi:latest
+                image: registry.connect.redhat.com/kong/kong-operator1:v0.9.0-certified
+                imagePullPolicy: Always
+                name: kong-operator
+              serviceAccountName: kong-operator
     strategy: deployment
   installModes:
-  - supported: false
+  - supported: true
     type: OwnNamespace
-  - supported: false
+  - supported: true
     type: SingleNamespace
   - supported: false
     type: MultiNamespace
@@ -663,24 +183,25 @@ spec:
   keywords:
   - kong
   - ingress
-  - controller
+  - proxy
   - microservices
-  - kubernetes
-  - gateway
-  - api
-  - management
   links:
-  - name: Kong Operator
-    url: https://kong-operator.domain
+  - name: Kong Website
+    url: https://konghq.com/kong
+  - name: Kong Operator Documentation
+    url: https://github.com/Kong/kong-operator/blob/v0.9.0/README.md
+  - name: Quick Start Guide
+    url: https://github.com/Kong/kong-operator/blob/v0.9.0/README.md#quick-start
+  - name: Helm Chart Source
+    url: https://github.com/kong/kong-operator/tree/v0.9.0/helm-charts/kong/
   maintainers:
+  - email: shane.utt@konghq.com
+    name: Shane
   - email: michal.flendrich@konghq.com
     name: Michal
   - email: traines@konghq.com
     name: Travis
-  - email: shane.utt@konghq.com
-    name: Shane
   maturity: alpha
   provider:
     name: Kong Inc.
-    url: https://konghq.com/
-  version: 0.0.1
+  version: 0.10.0
