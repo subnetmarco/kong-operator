@@ -1,0 +1,512 @@
+apiVersion: charts.konghq.com/v1alpha1
+kind: Kong
+metadata:
+  name: kong-sample
+spec:
+  # Default values copied from <project_dir>/helm-charts/kong/values.yaml
+  admin:
+    annotations: {}
+    enabled: false
+    http:
+      containerPort: 8001
+      enabled: false
+      parameters: []
+      servicePort: 8001
+    ingress:
+      annotations: {}
+      enabled: false
+      hostname: null
+      ingressClassName: null
+      path: /
+    labels: {}
+    tls:
+      containerPort: 8444
+      enabled: true
+      parameters:
+      - http2
+      servicePort: 8444
+    type: NodePort
+  autoscaling:
+    enabled: false
+    maxReplicas: 5
+    metrics:
+    - resource:
+        name: cpu
+        target:
+          averageUtilization: 80
+          type: Utilization
+      type: Resource
+    minReplicas: 2
+    targetCPUUtilizationPercentage: null
+  cluster:
+    annotations: {}
+    enabled: false
+    labels: {}
+    tls:
+      containerPort: 8005
+      enabled: false
+      parameters: []
+      servicePort: 8005
+    type: ClusterIP
+  clustertelemetry:
+    annotations: {}
+    enabled: false
+    labels: {}
+    tls:
+      containerPort: 8006
+      enabled: false
+      parameters: []
+      servicePort: 8006
+    type: ClusterIP
+  containerSecurityContext: {}
+  dblessConfig:
+    config: |
+      _format_version: "1.1"
+      services:
+        # Example configuration
+        # - name: example.com
+        #   url: http://example.com
+        #   routes:
+        #   - name: example
+        #     paths:
+        #     - "/example"
+    configMap: ""
+  deployment:
+    daemonset: false
+    kong:
+      enabled: true
+    serviceAccount:
+      create: true
+    test:
+      enabled: false
+  deploymentAnnotations:
+    kuma.io/gateway: enabled
+    traffic.sidecar.istio.io/includeInboundPorts: ""
+  enterprise:
+    enabled: false
+    portal:
+      enabled: false
+    rbac:
+      admin_gui_auth: basic-auth
+      admin_gui_auth_conf_secret: CHANGEME-admin-gui-auth-conf-secret
+      enabled: false
+      session_conf_secret: kong-session-config
+    smtp:
+      admin_emails_from: none@example.com
+      admin_emails_reply_to: none@example.com
+      auth:
+        smtp_password_secret: CHANGEME-smtp-password
+        smtp_username: ""
+      enabled: false
+      portal_emails_from: none@example.com
+      portal_emails_reply_to: none@example.com
+      smtp_admin_emails: none@example.com
+      smtp_auth_type: ""
+      smtp_host: smtp.example.com
+      smtp_port: 587
+      smtp_ssl: nil
+      smtp_starttls: true
+    vitals:
+      enabled: true
+  env:
+    admin_access_log: /dev/stdout
+    admin_error_log: /dev/stderr
+    admin_gui_access_log: /dev/stdout
+    admin_gui_error_log: /dev/stderr
+    database: "off"
+    nginx_worker_processes: "2"
+    portal_api_access_log: /dev/stdout
+    portal_api_error_log: /dev/stderr
+    prefix: /kong_prefix/
+    proxy_access_log: /dev/stdout
+    proxy_error_log: /dev/stderr
+  extraConfigMaps: []
+  extraLabels: {}
+  extraSecrets: []
+  image:
+    pullPolicy: IfNotPresent
+    repository: kong
+    tag: "2.5"
+  ingressController:
+    admissionWebhook:
+      certificate:
+        provided: false
+      enabled: false
+      failurePolicy: Fail
+      port: 8080
+    args: []
+    enabled: true
+    env:
+      kong_admin_tls_skip_verify: true
+    image:
+      effectiveSemver: null
+      repository: kong/kubernetes-ingress-controller
+      tag: "2.0"
+    ingressClass: kong
+    ingressClassAnnotations: {}
+    livenessProbe:
+      failureThreshold: 3
+      httpGet:
+        path: /healthz
+        port: 10254
+        scheme: HTTP
+      initialDelaySeconds: 5
+      periodSeconds: 10
+      successThreshold: 1
+      timeoutSeconds: 5
+    rbac:
+      create: true
+    readinessProbe:
+      failureThreshold: 3
+      httpGet:
+        path: /healthz
+        port: 10254
+        scheme: HTTP
+      initialDelaySeconds: 5
+      periodSeconds: 10
+      successThreshold: 1
+      timeoutSeconds: 5
+    resources: {}
+    watchNamespaces: []
+  lifecycle:
+    preStop:
+      exec:
+        command:
+        - /bin/sh
+        - -c
+        - /bin/sleep 15 && kong quit
+  livenessProbe:
+    failureThreshold: 3
+    httpGet:
+      path: /status
+      port: status
+      scheme: HTTP
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 5
+  manager:
+    annotations: {}
+    enabled: true
+    http:
+      containerPort: 8002
+      enabled: true
+      parameters: []
+      servicePort: 8002
+    ingress:
+      annotations: {}
+      enabled: false
+      hostname: null
+      ingressClassName: null
+      path: /
+    labels: {}
+    tls:
+      containerPort: 8445
+      enabled: true
+      parameters:
+      - http2
+      servicePort: 8445
+    type: NodePort
+  migrations:
+    annotations:
+      sidecar.istio.io/inject: false
+    backoffLimit: null
+    jobAnnotations: {}
+    postUpgrade: true
+    preUpgrade: true
+    resources: {}
+  nodeSelector: {}
+  plugins: {}
+  podAnnotations: {}
+  podDisruptionBudget:
+    enabled: false
+  podLabels: {}
+  podSecurityPolicy:
+    enabled: false
+    spec:
+      allowPrivilegeEscalation: false
+      fsGroup:
+        rule: RunAsAny
+      hostIPC: false
+      hostNetwork: false
+      hostPID: false
+      privileged: false
+      readOnlyRootFilesystem: true
+      runAsGroup:
+        rule: RunAsAny
+      runAsUser:
+        rule: RunAsAny
+      seLinux:
+        rule: RunAsAny
+      supplementalGroups:
+        rule: RunAsAny
+      volumes:
+      - configMap
+      - secret
+      - emptyDir
+  portal:
+    annotations: {}
+    enabled: true
+    http:
+      containerPort: 8003
+      enabled: true
+      parameters: []
+      servicePort: 8003
+    ingress:
+      annotations: {}
+      enabled: false
+      hostname: null
+      ingressClassName: null
+      path: /
+    labels: {}
+    tls:
+      containerPort: 8446
+      enabled: true
+      parameters:
+      - http2
+      servicePort: 8446
+    type: NodePort
+  portalapi:
+    annotations: {}
+    enabled: true
+    http:
+      containerPort: 8004
+      enabled: true
+      parameters: []
+      servicePort: 8004
+    ingress:
+      annotations: {}
+      enabled: false
+      hostname: null
+      ingressClassName: null
+      path: /
+    labels: {}
+    tls:
+      containerPort: 8447
+      enabled: true
+      parameters:
+      - http2
+      servicePort: 8447
+    type: NodePort
+  postgresql:
+    enabled: false
+    extraEnv: []
+    global:
+      postgresql: {}
+    image:
+      debug: false
+      pullPolicy: IfNotPresent
+      registry: docker.io
+      repository: bitnami/postgresql
+      tag: 11.7.0-debian-10-r37
+    ldap:
+      baseDN: ""
+      bind_password: null
+      bindDN: ""
+      enabled: false
+      port: ""
+      prefix: ""
+      scheme: ""
+      search_attr: ""
+      search_filter: ""
+      server: ""
+      suffix: ""
+      tls: false
+      url: ""
+    livenessProbe:
+      enabled: true
+      failureThreshold: 6
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      successThreshold: 1
+      timeoutSeconds: 5
+    master:
+      affinity: {}
+      annotations: {}
+      extraInitContainers: []
+      extraVolumeMounts: []
+      extraVolumes: []
+      labels: {}
+      nodeSelector: {}
+      podAnnotations: {}
+      podLabels: {}
+      priorityClassName: ""
+      sidecars: []
+      tolerations: []
+    metrics:
+      enabled: false
+      image:
+        pullPolicy: IfNotPresent
+        registry: docker.io
+        repository: bitnami/postgres-exporter
+        tag: 0.8.0-debian-10-r52
+      livenessProbe:
+        enabled: true
+        failureThreshold: 6
+        initialDelaySeconds: 5
+        periodSeconds: 10
+        successThreshold: 1
+        timeoutSeconds: 5
+      prometheusRule:
+        additionalLabels: {}
+        enabled: false
+        namespace: ""
+        rules: []
+      readinessProbe:
+        enabled: true
+        failureThreshold: 6
+        initialDelaySeconds: 5
+        periodSeconds: 10
+        successThreshold: 1
+        timeoutSeconds: 5
+      securityContext:
+        enabled: false
+        runAsUser: 1001
+      service:
+        annotations:
+          prometheus.io/port: "9187"
+          prometheus.io/scrape: "true"
+        loadBalancerIP: null
+        type: ClusterIP
+      serviceMonitor:
+        additionalLabels: {}
+        enabled: false
+    networkPolicy:
+      allowExternal: true
+      enabled: false
+      explicitNamespacesSelector: {}
+    persistence:
+      accessModes:
+      - ReadWriteOnce
+      annotations: {}
+      enabled: true
+      mountPath: /bitnami/postgresql
+      size: 8Gi
+      subPath: ""
+    postgresqlDataDir: /bitnami/postgresql/data
+    postgresqlUsername: postgres
+    readinessProbe:
+      enabled: true
+      failureThreshold: 6
+      initialDelaySeconds: 5
+      periodSeconds: 10
+      successThreshold: 1
+      timeoutSeconds: 5
+    replication:
+      applicationName: my_application
+      enabled: false
+      numSynchronousReplicas: 0
+      password: repl_password
+      slaveReplicas: 1
+      synchronousCommit: "off"
+      user: repl_user
+    resources:
+      requests:
+        cpu: 250m
+        memory: 256Mi
+    securityContext:
+      enabled: true
+      fsGroup: 1001
+      runAsUser: 1001
+    service:
+      annotations: {}
+      port: 5432
+      type: ClusterIP
+    serviceAccount:
+      enabled: false
+    shmVolume:
+      chmod:
+        enabled: true
+      enabled: true
+    slave:
+      affinity: {}
+      annotations: {}
+      extraInitContainers: |
+        # - name: do-something
+        #   image: busybox
+        #   command: ['do', 'something']
+      extraVolumeMounts: []
+      extraVolumes: []
+      labels: {}
+      nodeSelector: {}
+      podAnnotations: {}
+      podLabels: {}
+      priorityClassName: ""
+      sidecars: []
+      tolerations: []
+    updateStrategy:
+      type: RollingUpdate
+    volumePermissions:
+      enabled: false
+      image:
+        pullPolicy: Always
+        registry: docker.io
+        repository: bitnami/minideb
+        tag: buster
+      securityContext:
+        runAsUser: 0
+  priorityClassName: ""
+  proxy:
+    annotations: {}
+    enabled: true
+    http:
+      containerPort: 8000
+      enabled: true
+      parameters: []
+      servicePort: 80
+    ingress:
+      annotations: {}
+      enabled: false
+      hostname: null
+      ingressClassName: null
+      path: /
+    labels:
+      enable-metrics: "true"
+    stream: {}
+    tls:
+      containerPort: 8443
+      enabled: true
+      parameters:
+      - http2
+      servicePort: 443
+    type: LoadBalancer
+  readinessProbe:
+    failureThreshold: 3
+    httpGet:
+      path: /status
+      port: status
+      scheme: HTTP
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 5
+  replicaCount: 1
+  resources: {}
+  secretVolumes: []
+  securityContext: {}
+  serviceMonitor:
+    enabled: false
+  status:
+    enabled: true
+    http:
+      containerPort: 8100
+      enabled: true
+      parameters: []
+    tls:
+      containerPort: 8543
+      enabled: false
+      parameters: []
+  terminationGracePeriodSeconds: 30
+  tolerations: []
+  udpProxy:
+    annotations: {}
+    enabled: false
+    labels: {}
+    stream: {}
+    type: LoadBalancer
+  updateStrategy: {}
+  waitImage:
+    enabled: true
+    pullPolicy: IfNotPresent
+  
+  

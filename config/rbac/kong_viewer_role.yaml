@@ -1,0 +1,20 @@
+# permissions for end users to view kongs.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kong-viewer-role
+rules:
+- apiGroups:
+  - charts.konghq.com
+  resources:
+  - kongs
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - charts.konghq.com
+  resources:
+  - kongs/status
+  verbs:
+  - get

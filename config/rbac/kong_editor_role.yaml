@@ -1,0 +1,24 @@
+# permissions for end users to edit kongs.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kong-editor-role
+rules:
+- apiGroups:
+  - charts.konghq.com
+  resources:
+  - kongs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - charts.konghq.com
+  resources:
+  - kongs/status
+  verbs:
+  - get

@@ -5,4 +5,12 @@ plugins:
   manifests.sdk.operatorframework.io/v2: {}
   scorecard.sdk.operatorframework.io/v2: {}
 projectName: kong-operator
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  domain: konghq.com
+  group: charts
+  kind: Kong
+  version: v1alpha1
 version: "3"
