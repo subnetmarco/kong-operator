@@ -1,5 +1,7 @@
 FROM scratch
 
+LABEL com.redhat.openshift.versions="v4.6-v4.9"
+
 # Core bundle labels.
 LABEL operators.operatorframework.io.bundle.mediatype.v1=registry+v1
 LABEL operators.operatorframework.io.bundle.manifests.v1=manifests/
@@ -13,8 +15,6 @@ LABEL operators.operatorframework.io.metrics.project_layout=helm.sdk.operatorfra
 # Labels for testing.
 LABEL operators.operatorframework.io.test.mediatype.v1=scorecard+v1
 LABEL operators.operatorframework.io.test.config.v1=tests/scorecard/
-
-LABEL com.redhat.openshift.versions="v4.6-v4.9"
 
 # Copy files to locations specified by labels.
 COPY bundle/manifests /manifests/
