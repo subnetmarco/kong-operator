@@ -17,7 +17,7 @@ spec:
       containers:
         - name: kong-operator
           # Replace this with the built image name
-          image: registry.connect.redhat.com/kong/kong-operator1:v0.9.0-certified
+          image: registry.connect.redhat.com/kong/kong-operator1:v0.10.0-certified
           imagePullPolicy: Always
           env:
             - name: WATCH_NAMESPACE
