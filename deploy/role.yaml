@@ -6,10 +6,12 @@ rules:
   # to manage HorizontalPodAutoscaler
 - apiGroups:
   - "autoscaling"
-- resources:
+  resources:
   - horizontalpodautoscalers
-- verbs:
-  - '*'
+  verbs:
+  - get
+  - create
+  - delete
   # to create Ingress rules for Kong
 - apiGroups:
   - "extensions"
