@@ -3,6 +3,15 @@ kind: ClusterRole
 metadata:
   name: kong-operator
 rules:
+  # to manage HorizontalPodAutoscaler
+- apiGroups:
+  - "autoscaling"
+  resources:
+  - horizontalpodautoscalers
+  verbs:
+  - get
+  - create
+  - delete
   # to create Ingress rules for Kong
 - apiGroups:
   - "extensions"
