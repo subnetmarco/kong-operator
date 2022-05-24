@@ -7,6 +7,8 @@
 
 ---
 
+# Deprecation Notice
+
 **Use of this operator for new Kong installations is discouraged in favor of the [kubectl](https://docs.konghq.com/gateway/2.7.x/install-and-run/kubernetes/) and [Helm](https://docs.konghq.com/gateway/2.7.x/install-and-run/helm/) installation methods. This operator is being deprecated in favor of a replacement based on Golang (instead of Helm). During the version `v0.x.x` lifecycle of this tool we decided that Helm did not suite our needs for a robust feature-rich operator. Security updates for this repository will be continued for the time being; but new features and other requests will not be prioritized. You can track the progress of the successor operator [here](https://github.com/kong/operator) and we highly encourage feature requests and discussions on the new operator repository to let us know your use cases and needs.**
 
 ---
