@@ -11,7 +11,7 @@ metadata:
     description: The world’s most popular open source API gateway. Built for multi-cloud and hybrid, optimized for microservices and distributed architectures.
     repository: https://github.com/kong/kong-operator
     support: Kong Kubernetes Team
-  name: kong.v0.10.0
+  name: kong.v0.10.1
   namespace: placeholder
 spec:
   customresourcedefinitions:
@@ -29,21 +29,21 @@ spec:
     * a standalone Kong gateway (without the ingress controller; either DB-enabled or DB-less)
     * a standalone Ingress Controller (configuring an external instance of Kong)
 
-    Those configurations are further described in the [_Deployment Options_](https://github.com/Kong/kong-operator/blob/v0.10.0/helm-charts/kong/README.md#deployment-options) section of documentation.
+    Those configurations are further described in the [_Deployment Options_](https://github.com/Kong/kong-operator/blob/v0.10.1/helm-charts/kong/README.md#deployment-options) section of documentation.
 
     ### Quick Start
 
-    The [Quick Start guide](https://github.com/Kong/kong-operator/blob/v0.10.0/README.md#quick-start) uses Kong Operator to deploy
+    The [Quick Start guide](https://github.com/Kong/kong-operator/blob/v0.10.1/README.md#quick-start) uses Kong Operator to deploy
     our recommended Kong setup for Kubernetes users (Kong DB-less with Ingress Controller), which includes an instance of Kong
     serving as a proxy to an example Kubernetes service.
 
     ### Documentation
 
-    The primary documentation site for Kong Operator is located [in its GitHub repository](https://github.com/Kong/kong-operator/blob/v0.10.0/README.md).
+    The primary documentation site for Kong Operator is located [in its GitHub repository](https://github.com/Kong/kong-operator/blob/v0.10.1/README.md).
 
     Kong Operator provides the same configuration flexibility as the Kong Helm chart.
-    Refer to the [Helm chart documentation](https://github.com/Kong/kong-operator/blob/v0.10.0/helm-charts/kong/README.md),
-    the [Configuration](https://github.com/Kong/kong-operator/blob/v0.10.0/README.md#configuration) section of Kong Operator docs, and the example `Kong` resource below.
+    Refer to the [Helm chart documentation](https://github.com/Kong/kong-operator/blob/v0.10.1/helm-charts/kong/README.md),
+    the [Configuration](https://github.com/Kong/kong-operator/blob/v0.10.1/README.md#configuration) section of Kong Operator docs, and the example `Kong` resource below.
 
     ### Upgrading from versions 0.8.0 and earlier
 
@@ -135,6 +135,12 @@ spec:
           - '*'
           verbs:
           - '*'
+        - apiGroups:
+          - networking.k8s.io
+          resources:
+          - ingressclasses
+          verbs:
+          - '*'
         serviceAccountName: kong-operator
       deployments:
       - name: kong-operator
@@ -189,11 +195,11 @@ spec:
   - name: Kong Website
     url: https://konghq.com/kong
   - name: Kong Operator Documentation
-    url: https://github.com/Kong/kong-operator/blob/v0.10.0/README.md
+    url: https://github.com/Kong/kong-operator/blob/v0.10.1/README.md
   - name: Quick Start Guide
-    url: https://github.com/Kong/kong-operator/blob/v0.10.0/README.md#quick-start
+    url: https://github.com/Kong/kong-operator/blob/v0.10.1/README.md#quick-start
   - name: Helm Chart Source
-    url: https://github.com/kong/kong-operator/tree/v0.10.0/helm-charts/kong/
+    url: https://github.com/kong/kong-operator/tree/v0.10.1/helm-charts/kong/
   maintainers:
   - email: shane.utt@konghq.com
     name: Shane
@@ -204,4 +210,4 @@ spec:
   maturity: alpha
   provider:
     name: Kong Inc.
-  version: 0.10.0
+  version: 0.10.1
