@@ -1,12 +1,22 @@
 # Changelog
 
+## 0.10.1
+
+### Fixed
+
+* Kong Operator lacking the permission to manage `IngressClass` resources [(#71)](https://github.com/Kong/kong-operator/issues/71)
+
+## 0.10.0
+
+### Breaking changes
+
+* Rebuilt on top of the updated operator-sdk. This is no longer a "Helm operator" as that notion has been discontinued in favor of Kubebuilder being the base for operators that rely on a Helm chart.
+
 ## 0.9.0
 
 ### Improvements
 
 * Updated the helm-operator base image to v0.19.4.
-
-## 0.9.0
 
 ### Breaking changes
 
