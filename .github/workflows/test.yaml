@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: 'Check out the repo'
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - uses: satackey/action-docker-layer-caching@v0.0.4
 
@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: 'Check out the repo'
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: 'Build: docker build'
       uses: docker/build-push-action@v1
@@ -46,7 +46,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: 'Check out the repo'
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: 'Arrange: Set up microk8s'
       run: |
